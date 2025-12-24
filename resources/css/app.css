@@ -23,16 +23,19 @@
     --color-zinc-900: #171717;
     --color-zinc-950: #0a0a0a;
 
-    --color-accent: var(--color-neutral-800);
-    --color-accent-content: var(--color-neutral-800);
+    --color-brand-purple: #6a11cb;
+    --color-brand-light: #f7f1fe;
+
+    --color-accent: var(--color-brand-purple);
+    --color-accent-content: var(--color-brand-purple);
     --color-accent-foreground: var(--color-white);
 }
 
 @layer theme {
     .dark {
-        --color-accent: var(--color-white);
-        --color-accent-content: var(--color-white);
-        --color-accent-foreground: var(--color-neutral-800);
+        --color-accent: var(--color-brand-purple);
+        --color-accent-content: var(--color-brand-purple);
+        --color-accent-foreground: var(--color-white);
     }
 }
 
@@ -51,8 +54,15 @@
     @apply grid gap-2;
 }
 
-[data-flux-label] {
-    @apply  !mb-0 !leading-tight;
+/* Force black text for labels and inputs inside the auth card, even in dark mode */
+.auth-card [data-flux-label] {
+    @apply !mb-0 !leading-tight !text-black !font-medium;
+}
+
+.auth-card input, 
+.auth-card textarea, 
+.auth-card select {
+    @apply !text-black !bg-white placeholder:!text-zinc-400;
 }
 
 input:focus[data-flux-control],

@@ -1,5 +1,5 @@
-<footer class="bg-white border-t border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24 pb-8">
+<footer class="bg-white border-t border-gray-200 relative overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24 pb-8 relative z-10">
         <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
             <!-- Brand -->
             <div class="lg:col-span-2">
@@ -17,16 +17,16 @@
                                 d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
                             </path>
                         </svg>
-                        <span>hello@allsers.com</span>
+                        <span>support@allsers.com</span>
                     </div>
-                    <div class="flex items-center gap-3 text-gray-600">
+                    <!-- <div class="flex items-center gap-3 text-gray-600">
                         <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
                             </path>
                         </svg>
-                        <span>+1 (555) 123-4567</span>
-                    </div>
+                        <span>+234 902 222 2222</span>
+                    </div> -->
                     <div class="flex items-center gap-3 text-gray-600">
                         <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -35,7 +35,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
-                        <span>San Francisco, CA</span>
+                        <span>Abuja, NG</span>
                     </div>
                 </div>
             </div>
@@ -48,11 +48,7 @@
                     <li><a href="#" class="text-gray-600 hover:text-primary transition-colors duration-200">List
                             Your
                             Business</a></li>
-                    <li><a href="#"
-                            class="text-gray-600 hover:text-primary transition-colors duration-200">Pricing</a>
-                    </li>
-                    <li><a href="#"
-                            class="text-gray-600 hover:text-primary transition-colors duration-200">Features</a>
+                    <li><a href="#" class="text-gray-600 hover:text-primary transition-colors duration-200">Features</a>
                     </li>
                 </ul>
             </div>
@@ -63,13 +59,8 @@
                     <li><a href="#" class="text-gray-600 hover:text-primary transition-colors duration-200">About
                             Us</a>
                     </li>
-                    <li><a href="#"
-                            class="text-gray-600 hover:text-primary transition-colors duration-200">Careers</a>
+                    <li><a href="#" class="text-gray-600 hover:text-primary transition-colors duration-200">Careers</a>
                     </li>
-                    <li><a href="#"
-                            class="text-gray-600 hover:text-primary transition-colors duration-200">Blog</a></li>
-                    <li><a href="#"
-                            class="text-gray-600 hover:text-primary transition-colors duration-200">Press</a></li>
                 </ul>
             </div>
             <!-- Support -->
@@ -79,11 +70,10 @@
                     <li><a href="#" class="text-gray-600 hover:text-primary transition-colors duration-200">Help
                             Center</a>
                     </li>
-                    <li><a href="#"
-                            class="text-gray-600 hover:text-primary transition-colors duration-200">Contact Us</a>
+                    <li><a href="#" class="text-gray-600 hover:text-primary transition-colors duration-200">Contact
+                            Us</a>
                     </li>
-                    <li><a href="#"
-                            class="text-gray-600 hover:text-primary transition-colors duration-200">Privacy
+                    <li><a href="#" class="text-gray-600 hover:text-primary transition-colors duration-200">Privacy
                             Policy</a></li>
                     <li><a href="#" class="text-gray-600 hover:text-primary transition-colors duration-200">Terms
                             of
@@ -95,21 +85,21 @@
         <div class="pt-8 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p class="text-gray-600 text-sm">© {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
             <div class="flex gap-4">
-                <a href="#" aria-label="Facebook"
+                <a href="https://web.facebook.com/profile.php?id=61568367991669" aria-label="Facebook"
                     class="w-10 h-10 bg-primary-light rounded-full flex items-center justify-center text-gray-600 hover:bg-primary hover:text-white transition-all duration-200">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <path
                             d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                     </svg>
                 </a>
-                <a href="#" aria-label="Twitter"
+                <a href="https://www.tiktok.com/@_all_services" aria-label="Tiktok"
                     class="w-10 h-10 bg-primary-light rounded-full flex items-center justify-center text-gray-600 hover:bg-primary hover:text-white transition-all duration-200">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <path
-                            d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
+                            d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z" />
                     </svg>
                 </a>
-                <a href="#" aria-label="Instagram"
+                <a href="https://www.instagram.com/allserservices/" aria-label="Instagram"
                     class="w-10 h-10 bg-primary-light rounded-full flex items-center justify-center text-gray-600 hover:bg-primary hover:text-white transition-all duration-200">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <path
@@ -125,5 +115,13 @@
                 </a>
             </div>
         </div>
+    </div>
+    </div>
+
+    <div
+        class="absolute bottom-0 left-0 right-0 flex justify-center pointer-events-none select-none opacity-[0.50] -mb-[5vw]">
+        <h1 class="text-[28vw] font-black text-[#6a11cb] leading-none tracking-tighter">
+            {{ config('app.name') }}
+        </h1>
     </div>
 </footer>

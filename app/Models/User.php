@@ -23,6 +23,20 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'username',
+        'profile_picture',
+        'gender',
+        'work',
+        'bio',
+        'experience_year',
+        'work_status',
+        'phone_number',
+        'address',
+        'latitude',
+        'longitude',
+        'status',
+        'last_activity',
     ];
 
     /**
@@ -47,6 +61,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'latitude' => 'decimal:8',
+            'longitude' => 'decimal:8',
+            'last_activity' => 'datetime',
         ];
     }
 
@@ -58,7 +75,23 @@ class User extends Authenticatable
         return Str::of($this->name)
             ->explode(' ')
             ->take(2)
-            ->map(fn ($word) => Str::substr($word, 0, 1))
+            ->map(fn($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    /**
+     * Check if the user is a guest (customer).
+     */
+    public function isGuest(): bool
+    {
+        return $this->role === 'guest';
+    }
+
+    /**
+     * Check if the user is an artisan (provider).
+     */
+    public function isArtisan(): bool
+    {
+        return $this->role === 'artisan';
     }
 }

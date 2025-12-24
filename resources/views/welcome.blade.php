@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ config('app.name') }} - Find Trusted Artisans & Service Providers Near You</title>
     @snowfall
-    <meta name="description"
+    @vite(['resources/js/app.js'])
+    <meta name="description"    
         content="Connect with verified artisans and service providers. Chat directly, view their work, and hire with confidence. Find local services on the map." />
     <meta name="author" content="Allsers" />
     <link rel="canonical" href="https://allsers.com" />
@@ -732,12 +733,13 @@
                     <p class="text-black mb-6 leading-relaxed">"Found an amazing electrician within minutes. The chat
                         feature made it so easy to discuss what I needed before booking."</p>
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                            <span class="text-primary font-semibold">SJ</span>
+                        <div class="bg-primary/10 rounded-full flex items-center justify-center">
+                            <img class="rounded-full border border-2 border-purple-600 w-12 h-12" src="https://allsers.com/profilePics/66d96ccab2932-IMG-20240204-WA0013.jpg"
+                                alt="">
                         </div>
                         <div>
-                            <div class="font-semibold text-black">Sarah Johnson</div>
-                            <div class="text-sm text-gray-600">Homeowner</div>
+                            <div class="font-semibold text-black">Olabintan Oluyeye</div>
+                            <div class="text-sm text-gray-600">Beauty Home</div>
                         </div>
                     </div>
                 </div>
@@ -767,14 +769,15 @@
                         </svg>
                     </div>
                     <p class="text-black mb-6 leading-relaxed">"As a service provider, Allsers has helped me grow my
-                        client base significantly. The 24-hour ads feature is genius!"</p>
+                        client base significantly. The 24 hour ads feature is genius!"</p>
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                            <span class="text-primary font-semibold">MW</span>
+                        <div class="bg-primary/10 rounded-full flex items-center justify-center">
+                            <img class="rounded-full border border-2 border-purple-600 w-12 h-12" src="https://allsers.com/profilePics/66d82e9f84165-images%20(19)_20240903203759.jpeg"
+                                alt="">
                         </div>
                         <div>
-                            <div class="font-semibold text-black">Marcus Williams</div>
-                            <div class="text-sm text-gray-600">Plumber</div>
+                            <div class="font-semibold text-black">Lara Blessing</div>
+                            <div class="text-sm text-gray-600">Fashion Designer</div>
                         </div>
                     </div>
                 </div>
@@ -806,12 +809,13 @@
                     <p class="text-black mb-6 leading-relaxed">"The map feature is incredibly useful. I can see all the
                         providers near my business and compare them easily."</p>
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                            <span class="text-primary font-semibold">EC</span>
+                        <div class="bg-primary/10 rounded-full flex items-center justify-center">
+                            <img class="rounded-full border border-2 border-purple-600 w-12 h-12" src="https://allsers.com/profilePics/66d77d642d89f-75d5fcc7f923c80f2ee604734117965b.png"
+                                alt="">
                         </div>
                         <div>
-                            <div class="font-semibold text-black">Emily Chen</div>
-                            <div class="text-sm text-gray-600">Small Business Owner</div>
+                            <div class="font-semibold text-black">Adewale Damilola</div>
+                            <div class="text-sm text-gray-600">Photographer</div>
                         </div>
                     </div>
                 </div>
