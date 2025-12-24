@@ -1,0 +1,52 @@
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-transparent">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex items-center justify-between h-16 sm:h-20 px-4 sm:px-6 lg:px-8">
+            <a href="/" class="text-xl sm:text-2xl font-bold">
+                <span class="gradient-text">{{ config("app.name") }}</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#how-it-works"
+                    class="text-black/80 hover:text-primary font-medium transition-colors duration-200">How It
+                    Works</a>
+                <a href="#services"
+                    class="text-black/80 hover:text-primary font-medium transition-colors duration-200">Services</a>
+                <a href="#for-providers"
+                    class="text-black/80 hover:text-primary font-medium transition-colors duration-200">For
+                    Providers</a>
+                <a href="#about"
+                    class="text-black/80 hover:text-primary font-medium transition-colors duration-200">About</a>
+            </div>
+            <div class="hidden md:flex items-center gap-3">
+                <button
+                    class="px-4 py-2 text-sm font-semibold text-black hover:bg-primary-light rounded-xl transition-all duration-200">Log
+                    In</button>
+                <button
+                    class="px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-dark rounded-xl shadow-button hover:shadow-lg transition-all duration-200">Get
+                    Started</button>
+            </div>
+            <button id="mobile-menu-btn" class="md:hidden p-2 text-black">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16">
+                    </path>
+                </svg>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-200">
+            <div class="px-4 py-6 space-y-4">
+                <a href="#how-it-works" class="block py-2 text-black/80 hover:text-primary font-medium">How It
+                    Works</a>
+                <a href="#services" class="block py-2 text-black/80 hover:text-primary font-medium">Services</a>
+                <a href="#for-providers" class="block py-2 text-black/80 hover:text-primary font-medium">For
+                    Providers</a>
+                <a href="#about" class="block py-2 text-black/80 hover:text-primary font-medium">About</a>
+                <div class="pt-4 space-y-3 border-t border-gray-200">
+                    <button class="w-full py-2 text-sm font-semibold text-black hover:bg-primary-light rounded-xl">Log
+                        In</button>
+                    <button class="w-full py-2 text-sm font-semibold text-white bg-primary rounded-xl">Get
+                        Started</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
