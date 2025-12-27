@@ -65,7 +65,7 @@ new class extends Component {
                         {{ strtoupper(substr($data['liker_name'] ?? $data['commenter_name'] ?? $data['replier_name'] ?? $data['sender_name'] ?? 'A', 0, 1)) }}
                     </div>
                     <div class="absolute -bottom-1 -right-1 size-5 rounded-full border-2 border-white dark:border-zinc-900 flex items-center justify-center text-white
-                        @if($type === 'like') bg-red-500 @elseif($type === 'comment') bg-blue-500 @elseif($type === 'inquiry') bg-green-500 @else bg-purple-500 @endif
+                        @if($type === 'like') bg-red-500 @elseif($type === 'comment') bg-blue-500 @elseif($type === 'inquiry') bg-green-500 @elseif($type === 'message') bg-purple-500 @else bg-zinc-500 @endif
                     ">
                         @if($type === 'like')
                             <flux:icon name="heart" class="size-3 fill-current" />
@@ -75,6 +75,8 @@ new class extends Component {
                              <flux:icon name="arrow-uturn-left" class="size-3" />
                         @elseif($type === 'inquiry')
                             <flux:icon name="paper-airplane" class="size-3" />
+                        @elseif($type === 'message')
+                            <flux:icon name="chat-bubble-left-right" class="size-3" />
                         @else
                             <flux:icon name="bell" class="size-3" />
                         @endif
@@ -101,6 +103,15 @@ new class extends Component {
                         >
                             {{ __('View post') }}
                         </button>
+                    @elseif($type === 'message' && isset($data['conversation_id']))
+                        <a 
+                            href="{{ route('chat', $data['conversation_id']) }}"
+                            wire:navigate
+                            @if(!$isRead) wire:click="markAsRead('{{ $notification->id }}')" @endif
+                            class="mt-2 inline-block text-xs font-bold text-[var(--color-brand-purple)] hover:underline"
+                        >
+                            {{ __('Reply now') }}
+                        </a>
                     @elseif(isset($data['sender_id']))
                          <a 
                             href="{{ route('user.profile', $data['sender_id']) }}"

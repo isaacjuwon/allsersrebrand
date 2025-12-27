@@ -1,0 +1,367 @@
+<?php
+
+use App\Models\Conversation;
+use App\Models\Message;
+use App\Models\User;
+use App\Notifications\NewMessage;
+use Livewire\Volt\Component;
+use function Livewire\Volt\layout;
+use Livewire\Attributes\Url;
+use Livewire\WithFileUploads;
+
+layout('components.layouts.app');
+
+new class extends Component {
+    use WithFileUploads;
+
+    public ?Conversation $activeConversation = null;
+    public string $messageText = '';
+    public $photo;
+    public $document;
+    public $conversations = [];
+    public $messages = [];
+
+    protected $listeners = [
+        'refresh' => '$refresh',
+        'message-received' => 'loadMessages'
+    ];
+
+    public function refreshChat()
+    {
+        $oldMessageCount = count($this->messages);
+        $this->loadConversations();
+        $this->loadMessages();
+
+        if (count($this->messages) > $oldMessageCount) {
+            $this->dispatch('message-sent'); // Reusing same event for scroll
+            $this->markAsRead();
+        }
+    }
+
+    public function mount(?Conversation $conversation = null)
+    {
+        $this->loadConversations();
+
+        if ($conversation && $conversation->id) {
+            $this->selectConversation($conversation->id);
+        }
+    }
+
+    public function loadConversations()
+    {
+        $this->conversations = auth()->user()->conversations()
+            ->with(['users', 'latestMessage'])
+            ->orderByDesc('last_message_at')
+            ->get();
+    }
+
+    public function selectConversation($id)
+    {
+        $this->activeConversation = Conversation::with(['users', 'messages.user'])->findOrFail($id);
+        $this->loadMessages();
+        $this->markAsRead();
+    }
+
+    public function loadMessages()
+    {
+        if ($this->activeConversation) {
+            $this->messages = $this->activeConversation->messages()
+                ->with('user')
+                ->oldest()
+                ->get();
+        }
+    }
+
+    public function sendMessage()
+    {
+        if (empty(trim($this->messageText)) && !$this->photo && !$this->document)
+            return;
+        if (!$this->activeConversation)
+            return;
+
+        $imagePath = null;
+        if ($this->photo) {
+            $imagePath = $this->photo->store('chat/images', 'public');
+        }
+
+        $documentPath = null;
+        $documentName = null;
+        if ($this->document) {
+            $documentName = $this->document->getClientOriginalName();
+            $documentPath = $this->document->store('chat/documents', 'public');
+        }
+
+        $message = Message::create([
+            'conversation_id' => $this->activeConversation->id,
+            'user_id' => auth()->id(),
+            'content' => $this->messageText,
+            'image_path' => $imagePath,
+            'document_path' => $documentPath,
+            'document_name' => $documentName,
+        ]);
+
+        $this->activeConversation->update([
+            'last_message_at' => now(),
+        ]);
+
+        $this->activeConversation->other_user->notify(new NewMessage($message));
+
+        $this->reset(['messageText', 'photo', 'document']);
+        $this->loadMessages();
+        $this->loadConversations();
+
+        // Dispatch event for auto-scroll
+        $this->dispatch('message-sent');
+    }
+
+    public function markAsRead()
+    {
+        if ($this->activeConversation) {
+            $this->activeConversation->messages()
+                ->where('user_id', '!=', auth()->id())
+                ->whereNull('read_at')
+                ->update(['read_at' => now()]);
+        }
+    }
+
+    public function comingSoon()
+    {
+        $this->dispatch(
+            'toast',
+            type: 'info',
+            title: 'Feature Unavailable!',
+            message: 'Upgrade to premium plan to use voice and video calls to Allsers. Stay tuned!',
+            // title: 'Feature Coming Soon!',
+            // message: 'We are working hard to bring voice and video calls to Allsers. Stay tuned!'
+        );
+    }
+
+    public function rendering($view)
+    {
+        $view->title(__('Chat'));
+    }
+}; ?>
+
+<div wire:poll.10s="refreshChat"
+    class="h-[calc(100vh-4rem)] flex overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-sm mb-4">
+    <!-- Conversation List -->
+    <div class="w-80 border-e border-zinc-200 dark:border-zinc-800 flex flex-col">
+        <div class="p-4 border-b border-zinc-200 dark:border-zinc-800">
+            <h2 class="text-lg font-bold text-zinc-900 dark:text-zinc-100">{{ __('Messages') }}</h2>
+        </div>
+        <div class="flex-1 overflow-y-auto">
+            @forelse($conversations as $conv)
+                @php $otherUser = $conv->other_user; @endphp
+                <button wire:click="selectConversation({{ $conv->id }})"
+                    class="w-full p-4 flex items-center gap-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-left border-b border-zinc-50 dark:border-zinc-800/30 @if($activeConversation && $activeConversation->id === $conv->id) bg-purple-50 dark:bg-purple-900/10 @endif">
+                    <div
+                        class="shrink-0 size-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-700 dark:text-purple-300 font-bold overflow-hidden">
+                        @if($otherUser->profile_picture_url)
+                            <img src="{{ $otherUser->profile_picture_url }}" class="size-full object-cover">
+                        @else
+                            {{ $otherUser->initials() }}
+                        @endif
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-baseline gap-2">
+                            <h3 class="font-bold text-zinc-900 dark:text-zinc-100 truncate text-sm">{{ $otherUser->name }}
+                            </h3>
+                            <span class="text-[10px] text-zinc-500 whitespace-nowrap">
+                                {{ $conv->last_message_at ? $conv->last_message_at->diffForHumans(null, true) : '' }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-zinc-500 truncate mt-0.5">
+                            {{ $conv->latestMessage->content ?: ($conv->latestMessage && $conv->latestMessage->image_path ? __('Sent an image') : ($conv->latestMessage && $conv->latestMessage->document_path ? __('Sent a document') : __('No messages yet'))) }}
+                        </p>
+                    </div>
+                    @if($conv->messages()->where('user_id', '!=', auth()->id())->whereNull('read_at')->count() > 0)
+                        <div
+                            class="size-2 rounded-full bg-[var(--color-brand-purple)] shadow-[0_0_8px_var(--color-brand-purple)]">
+                        </div>
+                    @endif
+                </button>
+            @empty
+                <div class="p-8 text-center">
+                    <p class="text-sm text-zinc-500">{{ __('No conversations yet.') }}</p>
+                </div>
+            @endforelse
+        </div>
+    </div>
+
+    <!-- Message View -->
+    <div class="flex-1 flex flex-col bg-zinc-50/30 dark:bg-zinc-900/50">
+        @if($activeConversation)
+            <!-- Header -->
+            <div
+                class="p-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="size-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-700 dark:text-purple-300 font-bold text-sm overflow-hidden">
+                        @if($activeConversation->other_user->profile_picture_url)
+                            <img src="{{ $activeConversation->other_user->profile_picture_url }}"
+                                class="size-full object-cover">
+                        @else
+                            {{ $activeConversation->other_user->initials() }}
+                        @endif
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-zinc-900 dark:text-zinc-100 text-sm">
+                            {{ $activeConversation->other_user->name }}
+                        </h3>
+                        <p class="text-[10px] text-green-500 font-medium">{{ __('Online') }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <flux:button wire:click="comingSoon" variant="ghost" icon="phone" size="sm" />
+                    <flux:button wire:click="comingSoon" variant="ghost" icon="video-camera" size="sm" />
+                    <flux:button variant="ghost" icon="information-circle" size="sm" />
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div id="message-container" class="flex-1 overflow-y-auto p-6 space-y-4" x-data="{ 
+                                            scrollToBottom() {
+                                                this.$el.scrollTo({ top: this.$el.scrollHeight, behavior: 'smooth' });
+                                            }
+                                        }" x-init="scrollToBottom()" @message-sent.window="scrollToBottom()">
+                @foreach($messages as $msg)
+                    @php $isMine = $msg->user_id === auth()->id(); @endphp
+                    <div class="flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                        <div class="max-w-[70%] space-y-1">
+                            <div class="rounded-2xl px-4 py-2 text-sm shadow-sm
+                                                                                @if($isMine) 
+                                                                                    bg-[var(--color-brand-purple)] text-white rounded-tr-none 
+                                                                                @else 
+                                                                                    bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-700 rounded-tl-none 
+                                                                                @endif">
+
+                                @if($msg->image_path)
+                                    <div class="mb-2 rounded-lg overflow-hidden border border-white/20">
+                                        <img src="{{ route('images.show', ['path' => $msg->image_path]) }}"
+                                            class="max-w-xs h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                                            @click="window.open('{{ route('images.show', ['path' => $msg->image_path]) }}', '_blank')">
+                                    </div>
+                                @endif
+
+                                @if($msg->document_path)
+                                    <div
+                                        class="mb-2 flex items-center gap-2 p-2 rounded-lg @if($isMine) bg-white/20 @else bg-zinc-100 dark:bg-zinc-700 @endif border border-white/10">
+                                        <flux:icon name="document" class="size-5" />
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs font-bold truncate">{{ $msg->document_name }}</p>
+                                        </div>
+                                        <a href="{{ route('images.show', ['path' => $msg->document_path]) }}" target="_blank"
+                                            class="p-1 hover:bg-black/10 rounded transition-colors">
+                                            <flux:icon name="arrow-down-tray" class="size-4" />
+                                        </a>
+                                    </div>
+                                @endif
+
+                                @if($msg->content)
+                                    <p class="leading-relaxed">{{ $msg->content }}</p>
+                                @endif
+                            </div>
+                            <div class="flex items-center gap-1.5 px-1 {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                                <span
+                                    class="text-[8px] text-zinc-500 uppercase font-medium">{{ $msg->created_at->format('h:i A') }}</span>
+                                @if($isMine)
+                                    @if($msg->read_at)
+                                        <flux:icon name="check" class="size-2 text-blue-400" />
+                                        <flux:icon name="check" class="size-2 -ms-1.5 text-blue-400" />
+                                    @else
+                                        <flux:icon name="check" class="size-2 text-zinc-300" />
+                                    @endif
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- Input Area -->
+            <div class="p-4 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800">
+                <!-- Previews -->
+                @if($photo || $document)
+                    <div class="mb-3 flex gap-2 overflow-x-auto pb-2">
+                        @if($photo)
+                            <div
+                                class="relative size-16 shrink-0 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700">
+                                <img src="{{ $photo->temporaryUrl() }}" class="size-full object-cover">
+                                <button @click="$wire.set('photo', null)"
+                                    class="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5 hover:bg-black">
+                                    <flux:icon name="x-mark" class="size-3" />
+                                </button>
+                            </div>
+                        @endif
+                        @if($document)
+                            <div
+                                class="relative w-32 h-16 shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 flex items-center p-2 gap-2">
+                                <flux:icon name="document" class="size-5 text-zinc-400" />
+                                <p class="text-[10px] truncate flex-1 font-medium">{{ $document->getClientOriginalName() }}</p>
+                                <button @click="$wire.set('document', null)"
+                                    class="absolute -top-1.5 -right-1.5 bg-zinc-400 text-white rounded-full p-0.5 hover:bg-zinc-500 shadow-sm">
+                                    <flux:icon name="x-mark" class="size-3" />
+                                </button>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                <form wire:submit="sendMessage"
+                    class="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 rounded-2xl px-4 py-2 border border-zinc-200 dark:border-zinc-700 focus-within:ring-2 focus-within:ring-[var(--color-brand-purple)]/20 focus-within:border-[var(--color-brand-purple)] transition-all">
+
+                    <div class="flex gap-1">
+                        <label
+                            class="cursor-pointer text-zinc-400 hover:text-[var(--color-brand-purple)] transition-colors p-1">
+                            <flux:icon name="photo" class="size-5" />
+                            <input type="file" wire:model="photo" class="hidden" accept="image/*">
+                        </label>
+                        <label
+                            class="cursor-pointer text-zinc-400 hover:text-[var(--color-brand-purple)] transition-colors p-1">
+                            <flux:icon name="paper-clip" class="size-5" />
+                            <input type="file" wire:model="document" class="hidden">
+                        </label>
+                    </div>
+
+                    <input wire:model="messageText" type="text" placeholder="{{ __('Type a message...') }}"
+                        class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-1.5 text-zinc-900 dark:text-zinc-100">
+
+                    <button type="submit"
+                        class="p-2 text-[var(--color-brand-purple)] hover:scale-110 transition-transform disabled:opacity-50"
+                        @if(empty(trim($messageText)) && !$photo && !$document) disabled @endif>
+                        <flux:icon name="paper-airplane" class="size-5" />
+                    </button>
+                </form>
+                <div wire:loading wire:target="photo, document" class="mt-2 text-[10px] text-zinc-400">
+                    {{ __('Uploading attachment...') }}
+                </div>
+            </div>
+        @else
+            <div class="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                <div
+                    class="size-20 rounded-full bg-purple-50 dark:bg-purple-900/10 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-4 shadow-inner">
+                    <flux:icon name="chat-bubble-left-right" class="size-10" />
+                </div>
+                <h3 class="text-xl font-black text-zinc-900 dark:text-zinc-100 mb-2">{{ __('Select a Conversation') }}</h3>
+                <p class="text-zinc-500 max-w-xs text-sm leading-relaxed">
+                    {{ __('Choose a message from the left or start a new conversation to get started.') }}
+                </p>
+            </div>
+        @endif
+    </div>
+
+    <style>
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        #message-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Hide scrollbar for IE, Edge and Firefox */
+        #message-container {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+    </style>
+</div>

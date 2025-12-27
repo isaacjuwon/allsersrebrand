@@ -130,8 +130,12 @@ new class extends Component {
                     <div class="space-y-4">
                         <div class="flex items-center gap-3">
                             <div
-                                class="size-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm">
-                                {{ $post->user->initials() }}
+                                class="size-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm overflow-hidden">
+                                @if($post->user->profile_picture_url)
+                                    <img src="{{ $post->user->profile_picture_url }}" class="size-full object-cover">
+                                @else
+                                    {{ $post->user->initials() }}
+                                @endif
                             </div>
                             <div>
                                 <h3 class="font-bold text-zinc-900 dark:text-zinc-100">{{ $post->user->name }}</h3>
@@ -187,24 +191,25 @@ new class extends Component {
                                     <span class="text-sm font-medium">{{ $post->all_comments_count }}</span>
                                 </span>
                                 <button x-data="{ 
-                                                copied: false,
-                                                share() {
-                                                    const shareData = {
-                                                        title: 'Post by {{ $post->user->name }}',
-                                                        text: 'Check out this post on Allsers: {{ Str::limit($post->content, 50) }}',
-                                                        url: window.location.origin + '/dashboard?post={{ $post->post_id }}'
-                                                    };
-    
-                                                    if (navigator.share) {
-                                                        navigator.share(shareData).catch(console.error);
-                                                    } else {
-                                                        navigator.clipboard.writeText(shareData.url).then(() => {
-                                                            this.copied = true;
-                                                            setTimeout(() => this.copied = false, 2000);
-                                                        });
+                                                    copied: false,
+                                                    share() {
+                                                        const shareData = {
+                                                            title: 'Post by {{ $post->user->name }}',
+                                                            text: 'Check out this post on Allsers: {{ Str::limit($post->content, 50) }}',
+                                                            url: window.location.origin + '/dashboard?post={{ $post->post_id }}'
+                                                        };
+
+                                                        if (navigator.share) {
+                                                            navigator.share(shareData).catch(console.error);
+                                                        } else {
+                                                            navigator.clipboard.writeText(shareData.url).then(() => {
+                                                                this.copied = true;
+                                                                setTimeout(() => this.copied = false, 2000);
+                                                            });
+                                                        }
                                                     }
-                                                }
-                                            }" @click="share()" class="flex items-center gap-1.5 transition-colors relative"
+                                                }" @click="share()"
+                                    class="flex items-center gap-1.5 transition-colors relative"
                                     :class="copied ? 'text-green-500' : 'text-zinc-500 hover:text-green-500'">
                                     <flux:icon name="share" class="size-5" />
                                     <span x-show="copied" x-transition
@@ -215,7 +220,9 @@ new class extends Component {
                                 <button wire:click="toggleBookmark"
                                     class="transition-colors @if($post->isBookmarkedBy(auth()->user())) text-[var(--color-brand-purple)] @else text-zinc-500 hover:text-[var(--color-brand-purple)] @endif">
                                     @if($post->isBookmarkedBy(auth()->user()))
-                                        <svg class="size-5 fill-current" viewBox="0 0 24 24"><path d="M5 4c0-1.1.9-2 2-2h10a2 2-2v18l-7-3-7 3V4z" /></svg>
+                                        <svg class="size-5 fill-current" viewBox="0 0 24 24">
+                                            <path d="M5 4c0-1.1.9-2 2-2h10a2 2-2v18l-7-3-7 3V4z" />
+                                        </svg>
                                     @else
                                         <flux:icon name="bookmark" class="size-5" />
                                     @endif
@@ -232,8 +239,12 @@ new class extends Component {
                             @forelse($post->comments as $comment)
                                 <div class="flex gap-3">
                                     <div
-                                        class="size-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 font-bold text-xs shrink-0">
-                                        {{ $comment->user->initials() }}
+                                        class="size-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 font-bold text-xs shrink-0 overflow-hidden">
+                                        @if($comment->user->profile_picture_url)
+                                            <img src="{{ $comment->user->profile_picture_url }}" class="size-full object-cover">
+                                        @else
+                                            {{ $comment->user->initials() }}
+                                        @endif
                                     </div>
                                     <div class="flex-1 space-y-1">
                                         <div class="flex items-center gap-2">
@@ -254,8 +265,13 @@ new class extends Component {
                                                 @foreach($comment->replies as $reply)
                                                     <div class="flex gap-2">
                                                         <div
-                                                            class="size-6 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-500 font-bold text-[8px] shrink-0">
-                                                            {{ $reply->user->initials() }}
+                                                            class="size-6 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-500 font-bold text-[8px] shrink-0 overflow-hidden">
+                                                            @if($reply->user->profile_picture_url)
+                                                                <img src="{{ $reply->user->profile_picture_url }}"
+                                                                    class="size-full object-cover">
+                                                            @else
+                                                                {{ $reply->user->initials() }}
+                                                            @endif
                                                         </div>
                                                         <div class="flex-1 space-y-0.5">
                                                             <div class="flex items-center gap-2">
@@ -299,8 +315,12 @@ new class extends Component {
                     @endif
                     <div class="flex items-center gap-2">
                         <div
-                            class="size-8 rounded-full bg-[var(--color-brand-purple)]/10 flex items-center justify-center text-[var(--color-brand-purple)] text-xs font-bold shrink-0">
-                            {{ auth()->user()->initials() }}
+                            class="size-8 rounded-full bg-[var(--color-brand-purple)]/10 flex items-center justify-center text-[var(--color-brand-purple)] text-xs font-bold shrink-0 overflow-hidden">
+                            @if(auth()->user()->profile_picture_url)
+                                <img src="{{ auth()->user()->profile_picture_url }}" class="size-full object-cover">
+                            @else
+                                {{ auth()->user()->initials() }}
+                            @endif
                         </div>
                         <div class="flex-1 relative">
                             <input wire:model="commentContent" type="text" placeholder="{{ __('Write a comment...') }}"

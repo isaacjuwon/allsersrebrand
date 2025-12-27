@@ -22,7 +22,9 @@
 
             <flux:navlist.group :heading="__('Apps')" class="grid mt-4">
                 <flux:navlist.item icon="magnifying-glass" href="#">{{ __('Finder') }}</flux:navlist.item>
-                <flux:navlist.item icon="chat-bubble-left-right" href="#">{{ __('Chat') }}</flux:navlist.item>
+                <flux:navlist.item icon="chat-bubble-left-right" :href="route('chat')"
+                    :current="request()->routeIs('chat*')" :badge="auth()->user()->unreadMessagesCount() ?: null"
+                    wire:navigate>{{ __('Chat') }}</flux:navlist.item>
                 <flux:navlist.item icon="bell" :href="route('notifications')"
                     :badge="auth()->user()->unreadNotifications->count() ?: null" wire:navigate>
                     {{ __('Notifications') }}
@@ -73,18 +75,23 @@
 
         <!-- Desktop User Menu -->
         <flux:dropdown class="hidden lg:block" position="bottom" align="start">
-            <flux:profile :name="auth()->user()->name" :initials="auth()->user()->initials()"
-                icon:trailing="chevrons-up-down" data-test="sidebar-menu-button" />
+            <flux:profile :name="auth()->user()->name" :avatar="auth()->user()->profile_picture_url"
+                :initials="auth()->user()->initials()" icon:trailing="chevrons-up-down"
+                data-test="sidebar-menu-button" />
 
             <flux:menu class="w-[220px]">
                 <flux:menu.radio.group>
                     <div class="p-0 text-sm font-normal">
                         <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
                             <span class="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-lg">
-                                <span
-                                    class="flex h-full w-full items-center justify-center rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
-                                    {{ auth()->user()->initials() }}
-                                </span>
+                                @if(auth()->user()->profile_picture_url)
+                                    <img src="{{ auth()->user()->profile_picture_url }}" class="h-full w-full object-cover">
+                                @else
+                                    <span
+                                        class="flex h-full w-full items-center justify-center rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                        {{ auth()->user()->initials() }}
+                                    </span>
+                                @endif
                             </span>
 
                             <div class="grid flex-1 text-start text-sm leading-tight">
@@ -128,17 +135,22 @@
         <flux:spacer />
 
         <flux:dropdown position="top" align="end">
-            <flux:profile :initials="auth()->user()->initials()" icon-trailing="chevron-down" />
+            <flux:profile :avatar="auth()->user()->profile_picture_url" :initials="auth()->user()->initials()"
+                icon-trailing="chevron-down" />
 
             <flux:menu>
                 <flux:menu.radio.group>
                     <div class="p-0 text-sm font-normal">
                         <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
                             <span class="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-lg">
-                                <span
-                                    class="flex h-full w-full items-center justify-center rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
-                                    {{ auth()->user()->initials() }}
-                                </span>
+                                @if(auth()->user()->profile_picture_url)
+                                    <img src="{{ auth()->user()->profile_picture_url }}" class="h-full w-full object-cover">
+                                @else
+                                    <span
+                                        class="flex h-full w-full items-center justify-center rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                        {{ auth()->user()->initials() }}
+                                    </span>
+                                @endif
                             </span>
 
                             <div class="grid flex-1 text-start text-sm leading-tight">

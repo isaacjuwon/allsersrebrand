@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Models\Post;
+use App\Models\Conversation;
 use App\Mail\ServiceInquiryMail;
 use App\Notifications\ServiceInquiry;
 use Illuminate\Support\Facades\Mail;
@@ -66,6 +67,26 @@ new class extends Component {
             message: 'Your inquiry has been sent to ' . $this->user->name . '. Check your email for updates.'
         );
     }
+
+    public function startConversation()
+    {
+        $userId = $this->user->id;
+        $authId = auth()->id();
+
+        // Find conversation with both users
+        $conversation = auth()->user()->conversations()
+            ->whereHas('users', function ($query) use ($userId) {
+                $query->where('users.id', $userId);
+            })
+            ->first();
+
+        if (!$conversation) {
+            $conversation = Conversation::create();
+            $conversation->users()->attach([$authId, $userId]);
+        }
+
+        return $this->redirect(route('chat', $conversation->id), navigate: true);
+    }
 }; ?>
 
 <div class="max-w-4xl mx-auto px-4 py-8">
@@ -77,15 +98,20 @@ new class extends Component {
             <div class="relative flex justify-between items-end -mt-12 mb-6">
                 <div class="size-24 rounded-2xl bg-white dark:bg-zinc-900 p-1 shadow-lg">
                     <div
-                        class="w-full h-full rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-700 dark:text-purple-300 font-bold text-3xl">
-                        {{ $user->initials() }}
+                        class="w-full h-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-700 dark:text-purple-300 font-bold text-3xl overflow-hidden">
+                        @if($user->profile_picture_url)
+                            <img src="{{ $user->profile_picture_url }}" class="size-full object-cover">
+                        @else
+                            {{ $user->initials() }}
+                        @endif
                     </div>
                 </div>
 
                 <div class="flex gap-3">
                     @if(auth()->id() !== $user->id)
                         @if($user->isGuest())
-                            <flux:button variant="primary" icon="chat-bubble-left-right" class="rounded-full px-6">
+                            <flux:button wire:click="startConversation" variant="primary" icon="chat-bubble-left-right"
+                                class="rounded-full px-6">
                                 {{ __('Chat') }}
                             </flux:button>
                         @else

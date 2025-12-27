@@ -20,6 +20,8 @@ Route::view('notifications', 'notifications')
     ->middleware(['auth', 'verified'])
     ->name('notifications');
 
+Volt::route('chat/{conversation?}', 'pages.chat')->name('chat')->middleware(['auth']);
+
 Volt::route('user/{user}', 'pages.user-profile')->name('user.profile')->middleware(['auth']);
 
 Route::middleware(['auth'])->group(function () {

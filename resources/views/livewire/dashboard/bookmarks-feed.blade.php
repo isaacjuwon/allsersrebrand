@@ -89,8 +89,12 @@ new class extends Component {
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex items-center gap-3">
                         <div
-                            class="size-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm">
-                            {{ $post->user->initials() }}
+                            class="size-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm overflow-hidden">
+                            @if($post->user->profile_picture_url)
+                                <img src="{{ $post->user->profile_picture_url }}" class="size-full object-cover">
+                            @else
+                                {{ $post->user->initials() }}
+                            @endif
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
@@ -160,10 +164,12 @@ new class extends Component {
                             <path d="M5 4c0-1.1.9-2 2-2h10a2 2-2v18l-7-3-7 3V4z" />
                         </svg>
                     </button>
-                    <a href="{{ route('user.profile', $post->user) }}" wire:navigate
-                        class="border border-[var(--color-brand-purple)] text-[var(--color-brand-purple)] px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[var(--color-brand-purple)] hover:text-white transition-all">
-                        {{ __('Contact') }}
-                    </a>
+                    @if($post->user_id !== auth()->id())
+                        <a href="{{ route('user.profile', $post->user) }}" wire:navigate
+                            class="border border-[var(--color-brand-purple)] text-[var(--color-brand-purple)] px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[var(--color-brand-purple)] hover:text-white transition-all">
+                            {{ __('Contact') }}
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>

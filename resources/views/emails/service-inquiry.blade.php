@@ -7,6 +7,7 @@
         Go to Dashboard
     </x-mail::button>
 
-    Thanks,<br>
+    Thanks,
+    <br>
     The {{ config('app.name') }} Team
 </x-mail::message>

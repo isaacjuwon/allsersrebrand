@@ -68,9 +68,6 @@ class User extends Authenticatable //implements MustVerifyEmail
         ];
     }
 
-    /**
-     * Get the user's initials
-     */
     public function initials(): string
     {
         return Str::of($this->name)
@@ -78,6 +75,16 @@ class User extends Authenticatable //implements MustVerifyEmail
             ->take(2)
             ->map(fn($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    /**
+     * Get the URL to the user's profile picture.
+     */
+    public function getProfilePictureUrlAttribute(): ?string
+    {
+        return $this->profile_picture
+            ? asset('storage/' . $this->profile_picture)
+            : null;
     }
 
     /**
@@ -126,5 +133,27 @@ class User extends Authenticatable //implements MustVerifyEmail
     public function bookmarks()
     {
         return $this->hasMany(Bookmark::class);
+    }
+
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class);
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(Message::class);
+    }
+
+    public function unreadMessagesCount(): int
+    {
+        return Message::whereHas('conversation', function ($query) {
+            $query->whereHas('users', function ($q) {
+                $q->where('users.id', $this->id);
+            });
+        })
+            ->where('user_id', '!=', $this->id)
+            ->whereNull('read_at')
+            ->count();
     }
 }

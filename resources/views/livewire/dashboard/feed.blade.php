@@ -169,8 +169,12 @@ new class extends Component {
                 <div class="flex items-start gap-4">
                     <div class="shrink-0">
                         <div
-                            class="size-10 rounded-full bg-[var(--color-brand-purple)]/10 flex items-center justify-center text-[var(--color-brand-purple)] font-bold">
-                            {{ auth()->user()->initials() }}
+                            class="size-10 rounded-full bg-[var(--color-brand-purple)]/10 flex items-center justify-center text-[var(--color-brand-purple)] font-bold overflow-hidden">
+                            @if(auth()->user()->profile_picture_url)
+                                <img src="{{ auth()->user()->profile_picture_url }}" class="size-full object-cover">
+                            @else
+                                {{ auth()->user()->initials() }}
+                            @endif
                         </div>
                     </div>
                     <div class="flex-1 space-y-3">
@@ -254,8 +258,12 @@ new class extends Component {
                     <div class="flex justify-between items-start mb-4">
                         <div class="flex items-center gap-3">
                             <div
-                                class="size-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm">
-                                {{ $post->user->initials() }}
+                                class="size-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm overflow-hidden">
+                                @if($post->user->profile_picture_url)
+                                    <img src="{{ $post->user->profile_picture_url }}" class="size-full object-cover">
+                                @else
+                                    {{ $post->user->initials() }}
+                                @endif
                             </div>
                             <div>
                                 <div class="flex items-center gap-2">
@@ -337,24 +345,24 @@ new class extends Component {
                             <span class="text-sm font-medium">{{ $post->all_comments_count ?? 0 }}</span>
                         </button>
                         <button x-data="{ 
-                                                        copied: false,
-                                                        share() {
-                                                            const shareData = {
-                                                                title: 'Post by {{ $post->user->name }}',
-                                                                text: 'Check out this post on Allsers: {{ Str::limit($post->content, 50) }}',
-                                                                url: window.location.origin + '/dashboard?post={{ $post->post_id }}'
-                                                            };
+                                                                    copied: false,
+                                                                    share() {
+                                                                        const shareData = {
+                                                                            title: 'Post by {{ $post->user->name }}',
+                                                                            text: 'Check out this post on Allsers: {{ Str::limit($post->content, 50) }}',
+                                                                            url: window.location.origin + '/dashboard?post={{ $post->post_id }}'
+                                                                        };
 
-                                                            if (navigator.share) {
-                                                                navigator.share(shareData).catch(console.error);
-                                                            } else {
-                                                                navigator.clipboard.writeText(shareData.url).then(() => {
-                                                                    this.copied = true;
-                                                                    setTimeout(() => this.copied = false, 2000);
-                                                                });
-                                                            }
-                                                        }
-                                                    }" @click.stop="share()"
+                                                                        if (navigator.share) {
+                                                                            navigator.share(shareData).catch(console.error);
+                                                                        } else {
+                                                                            navigator.clipboard.writeText(shareData.url).then(() => {
+                                                                                this.copied = true;
+                                                                                setTimeout(() => this.copied = false, 2000);
+                                                                            });
+                                                                        }
+                                                                    }
+                                                                }" @click.stop="share()"
                             class="flex items-center gap-1.5 transition-colors relative"
                             :class="copied ? 'text-green-500' : 'text-zinc-500 hover:text-green-500'">
                             <flux:icon name="share" class="size-5" />
@@ -376,10 +384,12 @@ new class extends Component {
                                 <flux:icon name="bookmark" class="size-5" />
                             @endif
                         </button>
-                        <a href="{{ route('user.profile', $post->user) }}" wire:navigate
-                            class="border border-[var(--color-brand-purple)] text-[var(--color-brand-purple)] px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[var(--color-brand-purple)] hover:text-white transition-all">
-                            {{ __('Contact') }}
-                        </a>
+                        @if($post->user_id !== auth()->id())
+                            <a href="{{ route('user.profile', $post->user) }}" wire:navigate
+                                class="border border-[var(--color-brand-purple)] text-[var(--color-brand-purple)] px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[var(--color-brand-purple)] hover:text-white transition-all">
+                                {{ __('Contact') }}
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>
