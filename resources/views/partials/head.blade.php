@@ -1,11 +1,25 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<title>{{ $title ?? config('app.name') }}</title>
-<meta name="description"
-    content="Connect with verified artisans and service providers. Chat directly, view their work, and hire with confidence. Find local services on the map." />
+<title>{{ $metaTitle ?? $title ?? config('app.name') }}</title>
+<meta name="description" content="{{ $metaDescription ?? 'Connect with verified artisans and service providers. Chat directly, view their work, and hire with confidence.' }}" />
 <meta name="author" content="Allsers" />
-<link rel="canonical" href="https://allsers.com" />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ $metaUrl ?? url()->current() }}">
+<meta property="og:title" content="{{ $metaTitle ?? $title ?? config('app.name') }}">
+<meta property="og:description" content="{{ $metaDescription ?? 'Connect with verified artisans and service providers.' }}">
+<meta property="og:image" content="{{ $metaImage ?? asset('assets/allsers.png') }}">
+
+<!-- Twitter -->
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:url" content="{{ $metaUrl ?? url()->current() }}">
+<meta property="twitter:title" content="{{ $metaTitle ?? $title ?? config('app.name') }}">
+<meta property="twitter:description" content="{{ $metaDescription ?? 'Connect with verified artisans and service providers.' }}">
+<meta property="twitter:image" content="{{ $metaImage ?? asset('assets/allsers.png') }}">
+
+<link rel="canonical" href="{{ $metaUrl ?? url()->current() }}" />
 
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">

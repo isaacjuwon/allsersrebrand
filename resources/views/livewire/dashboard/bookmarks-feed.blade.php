@@ -7,6 +7,14 @@ use Livewire\Attributes\On;
 new class extends Component {
     public $posts = [];
 
+    use \Livewire\WithFileUploads;
+
+    public $repostingPostId = null;
+    public $repostContent = '';
+    public $repostImage = null;
+    public $repostVideo = null;
+    public $showRepostModal = false;
+
     public function mount()
     {
         $this->loadPosts();
@@ -20,6 +28,7 @@ new class extends Component {
         })
             ->with([
                 'user',
+                'repostOf.user',
                 'likes' => function ($query) use ($userId) {
                     $query->where('user_id', $userId);
                 },
@@ -75,6 +84,43 @@ new class extends Component {
 
         $this->loadPosts();
     }
+
+    public function openRepostModal($postId)
+    {
+        if (!auth()->user()->isArtisan()) {
+            $this->dispatch('toast', type: 'error', title: 'Permission Denied', message: 'Only artisans can repost.');
+            return;
+        }
+        $this->repostingPostId = $postId;
+        $this->repostContent = '';
+        $this->repostImage = null;
+        $this->repostVideo = null;
+        $this->showRepostModal = true;
+    }
+
+    public function createRepost()
+    {
+        $this->validate([
+            'repostContent' => 'nullable|string|max:1000',
+            'repostImage' => 'nullable|image|max:5120',
+            'repostVideo' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:20480',
+        ]);
+
+        $imagePath = $this->repostImage ? $this->repostImage->store('posts/images', 'public') : null;
+        $videoPath = $this->repostVideo ? $this->repostVideo->store('posts/videos', 'public') : null;
+
+        Post::create([
+            'user_id' => auth()->id(),
+            'repost_of_id' => $this->repostingPostId,
+            'content' => $this->repostContent,
+            'images' => $imagePath,
+            'video' => $videoPath,
+        ]);
+
+        $this->showRepostModal = false;
+        $this->loadPosts();
+        $this->dispatch('toast', type: 'success', title: 'Reposted!', message: 'Your repost has been published.');
+    }
 }; ?>
 
 <div class="space-y-6">
@@ -84,25 +130,42 @@ new class extends Component {
     </div>
 
     @forelse($posts as $post)
-        <div class="bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-zinc-200 dark:border-zinc-800">
-            <div @click="$dispatch('open-post-detail', { postId: {{ $post->id }} })" class="cursor-pointer">
+        <div
+            class="bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-zinc-200 dark:border-zinc-800 relative">
+            @if($post->repost_of_id)
+                <div class="absolute left-[10px] top-[75px] bottom-[60px] w-0.5 bg-[#6a11cb] opacity-50 z-0"></div>
+            @endif
+            <div @click="$dispatch('open-post-detail', { postId: {{ $post->id }} })" class="cursor-pointer relative z-10">
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex items-center gap-3">
-                        <div
-                            class="size-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm overflow-hidden">
+                        <a @if(auth()->id() !== $post->user_id) href="{{ route('artisan.profile', $post->user) }}"
+                        wire:navigate @endif @click.stop
+                            class="size-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm overflow-hidden @if(auth()->id() !== $post->user_id) cursor-pointer hover:ring-2 hover:ring-[var(--color-brand-purple)] transition-all @endif">
                             @if($post->user->profile_picture_url)
                                 <img src="{{ $post->user->profile_picture_url }}" class="size-full object-cover">
                             @else
                                 {{ $post->user->initials() }}
                             @endif
-                        </div>
+                        </a>
                         <div>
-                            <div class="flex items-center gap-2">
-                                <h3 class="font-bold text-zinc-900 dark:text-zinc-100">{{ $post->user->name }}</h3>
-                                <span
-                                    class="bg-purple-100 text-[var(--color-brand-purple)] text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
-                                    {{ $post->user->work ?? __('Artisan') }}
-                                </span>
+                            <div class="flex items-center gap-2 text-sm">
+                                <h3 @if(auth()->id() !== $post->user_id)
+                                @click.stop="window.location.href='{{ route('artisan.profile', $post->user) }}'" @endif
+                                    class="font-bold text-zinc-900 dark:text-zinc-100 @if(auth()->id() !== $post->user_id) hover:text-[var(--color-brand-purple)] cursor-pointer @endif">
+                                    {{ $post->user->name }}
+                                </h3>
+                                @if($post->repost_of_id)
+                                    <div
+                                        class="flex items-center gap-1 text-[10px] text-zinc-500 font-medium bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
+                                        <flux:icon name="arrow-path-rounded-square" class="size-3" />
+                                        <span>reposted work</span>
+                                    </div>
+                                @else
+                                    <span
+                                        class="bg-purple-100 text-[var(--color-brand-purple)] text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                                        {{ $post->user->work ?? __('Artisan') }}
+                                    </span>
+                                @endif
                             </div>
                             <p class="text-xs text-zinc-500">{{ $post->created_at->diffForHumans() }}</p>
                         </div>
@@ -134,12 +197,50 @@ new class extends Component {
                             controls></video>
                     </div>
                 @endif
+
+                <!-- Original Post Preview (Repost) -->
+                @if($post->repostOf)
+                    <div @click.stop="$dispatch('open-post-detail', { postId: {{ $post->repost_of_id }} })"
+                        class="mb-4 p-4 border border-zinc-100 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer ring-1 ring-transparent hover:ring-[var(--color-brand-purple)]/30">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div
+                                class="size-6 rounded-full bg-purple-50 flex items-center justify-center text-[10px] overflow-hidden">
+                                @if($post->repostOf->user->profile_picture_url)
+                                    <img src="{{ $post->repostOf->user->profile_picture_url }}" class="size-full object-cover">
+                                @else
+                                    {{ $post->repostOf->user->initials() }}
+                                @endif
+                            </div>
+                            <span
+                                class="text-xs font-bold text-zinc-900 dark:text-zinc-100">{{ $post->repostOf->user->name }}</span>
+                            <span class="text-[10px] text-zinc-400">• {{ $post->repostOf->created_at->diffForHumans() }}</span>
+                        </div>
+                        <p class="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 mb-2">
+                            {{ $post->repostOf->content }}
+                        </p>
+                        @if($post->repostOf->images)
+                            @php $originImages = array_filter(explode(',', $post->repostOf->images)); @endphp
+                            @if(count($originImages) > 0)
+                                <div class="h-32 rounded-lg overflow-hidden border border-zinc-200/50">
+                                    <img src="{{ route('images.show', ['path' => trim($originImages[0])]) }}"
+                                        class="size-full object-cover">
+                                </div>
+                            @endif
+                        @elseif($post->repostOf->video)
+                            <div
+                                class="h-32 rounded-lg overflow-hidden bg-black flex items-center justify-center border border-zinc-200/50">
+                                <video src="{{ route('images.show', ['path' => $post->repostOf->video]) }}"
+                                    class="w-full h-full object-cover" controls></video>
+                            </div>
+                        @endif
+                    </div>
+                @endif
             </div>
 
             <div class="flex items-center justify-between pt-2">
                 <div class="flex items-center gap-6">
                     <button wire:click="toggleLike({{ $post->id }})"
-                        @click="new Audio('{{ asset('assets/mixkit-little-goat-bleat-319.wav') }}').play()"
+                        @click="new Audio('{{ asset('assets/mixkit-cartoon-toy-whistle-616.wav') }}').play()"
                         class="flex items-center gap-1.5 transition-colors group @if($post->isLikedBy(auth()->user())) text-red-500 @else text-zinc-500 hover:text-red-500 @endif">
                         @if($post->isLikedBy(auth()->user()))
                             <svg class="size-5 fill-current group-hover:scale-110 transition-transform" viewBox="0 0 24 24"
@@ -157,6 +258,13 @@ new class extends Component {
                         <flux:icon name="chat-bubble-left" class="size-5" />
                         <span class="text-sm font-medium">{{ $post->all_comments_count ?? 0 }}</span>
                     </button>
+                    @if(auth()->user()->isArtisan())
+                        <button wire:click="openRepostModal({{ $post->id }})"
+                            class="flex items-center gap-1.5 text-zinc-500 hover:text-green-500 transition-colors"
+                            title="{{ __('Repost Work') }}">
+                            <flux:icon name="arrow-path-rounded-square" class="size-5" />
+                        </button>
+                    @endif
                 </div>
                 <div class="flex items-center gap-3">
                     <button wire:click="toggleBookmark({{ $post->id }})" class="text-[var(--color-brand-purple)]">
@@ -189,6 +297,75 @@ new class extends Component {
             </a>
         </div>
     @endforelse
+
+    <!-- Repost Modal -->
+    <flux:modal name="repost-modal" wire:model="showRepostModal" class="sm:max-w-lg">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ __('Repost Work') }}</flux:heading>
+                <flux:subheading>{{ __('Share this work and add your own progress or feedback.') }}</flux:subheading>
+            </div>
+
+            <div class="space-y-4">
+                <flux:textarea wire:model="repostContent" placeholder="{{ __('Add your thoughts or progress...') }}"
+                    rows="3" />
+
+                <div class="flex items-center gap-4">
+                    <label
+                        class="flex items-center gap-2 text-zinc-500 hover:text-[var(--color-brand-purple)] text-sm font-medium transition-colors cursor-pointer">
+                        <flux:icon name="photo" class="size-5" />
+                        <span>{{ __('Add Image') }}</span>
+                        <input type="file" wire:model="repostImage" accept="image/*" class="hidden">
+                    </label>
+                    <label
+                        class="flex items-center gap-2 text-zinc-500 hover:text-[var(--color-brand-purple)] text-sm font-medium transition-colors cursor-pointer">
+                        <flux:icon name="video-camera" class="size-5" />
+                        <span>{{ __('Add Video') }}</span>
+                        <input type="file" wire:model="repostVideo" accept="video/*" class="hidden">
+                    </label>
+                </div>
+
+                <div class="flex gap-4">
+                    @if($repostImage)
+                        <div class="relative group size-20 rounded-lg overflow-hidden border border-zinc-200 shadow-sm">
+                            <img src="{{ $repostImage->temporaryUrl() }}" class="size-full object-cover">
+                            <button type="button" wire:click="$set('repostImage', null)"
+                                class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <flux:icon name="x-mark" class="size-3" />
+                            </button>
+                        </div>
+                    @endif
+
+                    @if($repostVideo)
+                        <div
+                            class="relative group size-20 rounded-lg overflow-hidden border border-zinc-200 flex items-center justify-center bg-zinc-100 shadow-sm">
+                            <flux:icon name="video-camera" class="size-8 text-zinc-400" />
+                            <button type="button" wire:click="$set('repostVideo', null)"
+                                class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <flux:icon name="x-mark" class="size-3" />
+                            </button>
+                        </div>
+                    @endif
+                </div>
+
+                <div wire:loading wire:target="repostImage,repostVideo" class="text-xs text-zinc-500 italic">
+                    {{ __('Uploading asset...') }}
+                </div>
+            </div>
+
+            <div class="flex gap-2 justify-end">
+                <flux:modal.close>
+                    <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
+                </flux:modal.close>
+                <flux:button variant="primary" wire:click="createRepost" wire:loading.attr="disabled">
+                    <span wire:loading.remove wire:target="createRepost">{{ __('Repost') }}</span>
+                    <span wire:loading wire:target="createRepost text-xs" class="flex items-center gap-2">
+                        {{ __('Publishing...') }}
+                    </span>
+                </flux:button>
+            </div>
+        </div>
+    </flux:modal>
 
     <!-- Reuse Post Detail Drawer -->
     <livewire:dashboard.post-detail />

@@ -23,6 +23,7 @@ Route::view('notifications', 'notifications')
 Volt::route('chat/{conversation?}', 'pages.chat')->name('chat')->middleware(['auth']);
 
 Volt::route('user/{user}', 'pages.user-profile')->name('user.profile')->middleware(['auth']);
+Volt::route('artisan/{user:username}', 'pages.artisan-profile')->name('artisan.profile');
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');

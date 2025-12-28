@@ -14,7 +14,13 @@ class Post extends Model
         'content',
         'images',
         'video',
+        'repost_of_id',
     ];
+
+    public function repostOf()
+    {
+        return $this->belongsTo(Post::class, 'repost_of_id');
+    }
 
     protected $casts = [
         // Images will be stored as comma-separated string

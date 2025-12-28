@@ -16,6 +16,7 @@ new class extends Component {
     {
         $this->post = Post::with([
             'user',
+            'repostOf.user',
             'comments.user',
             'comments.replies.user',
             'bookmarks' => function ($query) {
@@ -119,26 +120,44 @@ new class extends Component {
                 <div
                     class="p-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between sticky top-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md z-10">
                     <h2 class="font-bold text-lg text-zinc-900 dark:text-zinc-100">{{ __('Post Details') }}</h2>
-                    <flux:modal.close>
-                        <flux:button variant="ghost" icon="x-mark" size="sm" />
-                    </flux:modal.close>
+                    <!-- <flux:modal.close>
+                                    <flux:button variant="ghost" icon="x-mark" size="sm" />
+                                </flux:modal.close> -->
                 </div>
 
                 <!-- Content Area -->
                 <div class="flex-1 overflow-y-auto p-4 space-y-6">
                     <!-- Original Post -->
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="size-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm overflow-hidden">
+                    <div class="space-y-4 relative">
+                        @if($post?->repost_of_id)
+                            <div class="absolute left-[-10px] top-12 bottom-[100px] w-0.5 bg-[#6a11cb] opacity-50 z-0"></div>
+                        @endif
+                        <div class="flex items-center gap-3 relative z-10">
+                            <a @if(auth()->id() !== $post->user_id) href="{{ route('artisan.profile', $post->user) }}"
+                            wire:navigate @endif @click.stop
+                                class="size-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm overflow-hidden @if(auth()->id() !== $post->user_id) cursor-pointer hover:ring-2 hover:ring-[var(--color-brand-purple)] transition-all @endif">
                                 @if($post->user->profile_picture_url)
                                     <img src="{{ $post->user->profile_picture_url }}" class="size-full object-cover">
                                 @else
                                     {{ $post->user->initials() }}
                                 @endif
-                            </div>
+                            </a>
                             <div>
-                                <h3 class="font-bold text-zinc-900 dark:text-zinc-100">{{ $post->user->name }}</h3>
+                                <div class="flex items-center gap-2">
+                                    <h3 @if(auth()->id() !== $post->user_id)
+                                        @click.stop="window.location.href='{{ route('artisan.profile', $post->user) }}'"
+                                    @endif
+                                        class="font-bold text-zinc-900 dark:text-zinc-100 @if(auth()->id() !== $post->user_id) hover:text-[var(--color-brand-purple)] cursor-pointer @endif">
+                                        {{ $post->user->name }}
+                                    </h3>
+                                    @if($post->repost_of_id)
+                                        <div
+                                            class="flex items-center gap-1 text-[10px] text-zinc-500 font-medium bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
+                                            <flux:icon name="arrow-path-rounded-square" class="size-3" />
+                                            <span>reposted work</span>
+                                        </div>
+                                    @endif
+                                </div>
                                 <p class="text-xs text-zinc-500">{{ $post->created_at->diffForHumans() }}</p>
                             </div>
                         </div>
@@ -170,11 +189,51 @@ new class extends Component {
                             </div>
                         @endif
 
+                        <!-- Original Post Preview (Repost) -->
+                        @if($post->repostOf)
+                            <div @click.stop="$dispatch('open-post-detail', { postId: {{ $post->repost_of_id }} })"
+                                class="mb-4 p-4 border border-zinc-100 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer ring-1 ring-transparent hover:ring-[var(--color-brand-purple)]/30">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div
+                                        class="size-6 rounded-full bg-purple-50 flex items-center justify-center text-[10px] overflow-hidden">
+                                        @if($post->repostOf->user->profile_picture_url)
+                                            <img src="{{ $post->repostOf->user->profile_picture_url }}"
+                                                class="size-full object-cover">
+                                        @else
+                                            {{ $post->repostOf->user->initials() }}
+                                        @endif
+                                    </div>
+                                    <span
+                                        class="text-xs font-bold text-zinc-900 dark:text-zinc-100">{{ $post->repostOf->user->name }}</span>
+                                    <span class="text-[10px] text-zinc-400">•
+                                        {{ $post->repostOf->created_at->diffForHumans() }}</span>
+                                </div>
+                                <p class="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 mb-2">
+                                    {{ $post->repostOf->content }}
+                                </p>
+                                @if($post->repostOf->images)
+                                    @php $originImages = array_filter(explode(',', $post->repostOf->images)); @endphp
+                                    @if(count($originImages) > 0)
+                                        <div class="h-32 rounded-lg overflow-hidden border border-zinc-200/50">
+                                            <img src="{{ route('images.show', ['path' => trim($originImages[0])]) }}"
+                                                class="size-full object-cover">
+                                        </div>
+                                    @endif
+                                @elseif($post->repostOf->video)
+                                    <div
+                                        class="h-32 rounded-lg overflow-hidden bg-black flex items-center justify-center border border-zinc-200/50">
+                                        <video src="{{ route('images.show', ['path' => $post->repostOf->video]) }}"
+                                            class="w-full h-full object-cover" controls></video>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+
                         <!-- Stats & Actions -->
                         <div class="flex items-center justify-between pt-4 border-t border-zinc-50 dark:border-zinc-800/50">
                             <div class="flex items-center gap-6">
                                 <button wire:click="toggleLike"
-                                    @click="new Audio('{{ asset('assets/mixkit-little-goat-bleat-319.wav') }}').play()"
+                                    @click="new Audio('{{ asset('assets/mixkit-cartoon-toy-whistle-616.wav') }}').play()"
                                     class="flex items-center gap-1.5 transition-colors group {{ $post->isLikedBy(auth()->user()) ? 'text-red-500' : 'text-zinc-500 hover:text-red-500' }}">
                                     @if($post->isLikedBy(auth()->user()))
                                         <svg class="size-5 fill-current" viewBox="0 0 24 24">
@@ -191,24 +250,24 @@ new class extends Component {
                                     <span class="text-sm font-medium">{{ $post->all_comments_count }}</span>
                                 </span>
                                 <button x-data="{ 
-                                                    copied: false,
-                                                    share() {
-                                                        const shareData = {
-                                                            title: 'Post by {{ $post->user->name }}',
-                                                            text: 'Check out this post on Allsers: {{ Str::limit($post->content, 50) }}',
-                                                            url: window.location.origin + '/dashboard?post={{ $post->post_id }}'
-                                                        };
+                                                                    copied: false,
+                                                                    share() {
+                                                                        const shareData = {
+                                                                            title: 'Post by {{ $post->user->name }}',
+                                                                            text: 'Check out this post on Allsers: {{ Str::limit($post->content, 50) }}',
+                                                                            url: window.location.origin + '/dashboard?post={{ $post->post_id }}'
+                                                                        };
 
-                                                        if (navigator.share) {
-                                                            navigator.share(shareData).catch(console.error);
-                                                        } else {
-                                                            navigator.clipboard.writeText(shareData.url).then(() => {
-                                                                this.copied = true;
-                                                                setTimeout(() => this.copied = false, 2000);
-                                                            });
-                                                        }
-                                                    }
-                                                }" @click="share()"
+                                                                        if (navigator.share) {
+                                                                            navigator.share(shareData).catch(console.error);
+                                                                        } else {
+                                                                            navigator.clipboard.writeText(shareData.url).then(() => {
+                                                                                this.copied = true;
+                                                                                setTimeout(() => this.copied = false, 2000);
+                                                                            });
+                                                                        }
+                                                                    }
+                                                                }" @click="share()"
                                     class="flex items-center gap-1.5 transition-colors relative"
                                     :class="copied ? 'text-green-500' : 'text-zinc-500 hover:text-green-500'">
                                     <flux:icon name="share" class="size-5" />

@@ -32,6 +32,7 @@ new class extends Component {
         $this->posts = Post::where('user_id', $this->user->id)
             ->with([
                 'user',
+                'repostOf.user',
                 'likes' => function ($query) {
                     $query->where('user_id', auth()->id());
                 },
@@ -107,7 +108,13 @@ new class extends Component {
                     </div>
                 </div>
 
-                <div class="flex gap-3">
+                <div class="flex gap-3" x-data="{ 
+                    copy(text) {
+                        navigator.clipboard.writeText(text).then(() => {
+                            $dispatch('toast', { type: 'success', title: 'Link Copied!', message: 'Profile link copied to clipboard.' });
+                        });
+                    }
+                }">
                     @if(auth()->id() !== $user->id)
                         @if($user->isGuest())
                             <flux:button wire:click="startConversation" variant="primary" icon="chat-bubble-left-right"
@@ -127,7 +134,8 @@ new class extends Component {
                             </button>
                         @endif
                     @endif
-                    <flux:button variant="outline" icon="share" class="rounded-full shadow-none">{{ __('Share') }}
+                    <flux:button @click="copy('{{ route('artisan.profile', $user->username ?? $user->id) }}')" variant="outline" icon="share" class="rounded-full shadow-none">
+                        {{ __('Share') }}
                     </flux:button>
                 </div>
             </div>
@@ -172,8 +180,35 @@ new class extends Component {
         <h2 class="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-4 px-2">{{ __('Portfolio & Posts') }}</h2>
 
         @forelse($posts as $post)
-            <div class="bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-zinc-200 dark:border-zinc-800">
-                <div @click="$dispatch('open-post-detail', { postId: {{ $post->id }} })" class="cursor-pointer">
+            <div class="bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-zinc-200 dark:border-zinc-800 relative">
+                @if($post->repost_of_id)
+                    <div class="absolute left-[10px] top-[70px] bottom-[50px] w-0.5 bg-[#6a11cb] opacity-50 z-0"></div>
+                @endif
+                <div @click="$dispatch('open-post-detail', { postId: {{ $post->id }} })" class="cursor-pointer relative z-10">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div
+                            class="size-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-xs overflow-hidden">
+                            @if($post->user->profile_picture_url)
+                                <img src="{{ $post->user->profile_picture_url }}" class="size-full object-cover">
+                            @else
+                                {{ $post->user->initials() }}
+                            @endif
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <h3 class="font-bold text-zinc-900 dark:text-zinc-100">{{ $post->user->name }}</h3>
+                                @if($post->repost_of_id)
+                                    <div
+                                        class="flex items-center gap-1 text-[10px] text-zinc-500 font-medium bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
+                                        <flux:icon name="arrow-path-rounded-square" class="size-3" />
+                                        <span>reposted work</span>
+                                    </div>
+                                @endif
+                            </div>
+                            <p class="text-[10px] text-zinc-500">{{ $post->created_at->diffForHumans() }}</p>
+                        </div>
+                    </div>
+
                     @if($post->content)
                         <p class="text-zinc-700 dark:text-zinc-300 mb-4 text-sm leading-relaxed">
                             {{ $post->content }}
@@ -190,6 +225,50 @@ new class extends Component {
                                 @endforeach
                             </div>
                         @endif
+                    @endif
+
+                    @if($post->video)
+                        <div class="mb-4 rounded-xl overflow-hidden h-80 border border-zinc-100 dark:border-zinc-800">
+                            <video src="{{ route('images.show', ['path' => $post->video]) }}" class="w-full h-full object-cover"
+                                controls></video>
+                        </div>
+                    @endif
+
+                    <!-- Original Post Preview (Repost) -->
+                    @if($post->repostOf)
+                        <div @click.stop="$dispatch('open-post-detail', { postId: {{ $post->repost_of_id }} })"
+                            class="mb-4 p-4 border border-zinc-100 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer ring-1 ring-transparent hover:ring-[var(--color-brand-purple)]/30">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div
+                                    class="size-6 rounded-full bg-purple-50 flex items-center justify-center text-[10px] overflow-hidden">
+                                    @if($post->repostOf->user->profile_picture_url)
+                                        <img src="{{ $post->repostOf->user->profile_picture_url }}" class="size-full object-cover">
+                                    @else
+                                        {{ $post->repostOf->user->initials() }}
+                                    @endif
+                                </div>
+                                <span class="text-xs font-bold text-zinc-900 dark:text-zinc-100">{{ $post->repostOf->user->name }}</span>
+                                <span class="text-[10px] text-zinc-400">• {{ $post->repostOf->created_at->diffForHumans() }}</span>
+                            </div>
+                            <p class="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 mb-2">
+                                {{ $post->repostOf->content }}
+                            </p>
+                            @if($post->repostOf->images)
+                                @php $originImages = array_filter(explode(',', $post->repostOf->images)); @endphp
+                                @if(count($originImages) > 0)
+                                    <div class="h-32 rounded-lg overflow-hidden border border-zinc-200/50">
+                                        <img src="{{ route('images.show', ['path' => trim($originImages[0])]) }}"
+                                            class="size-full object-cover">
+                                    </div>
+                                @endif
+                            @elseif($post->repostOf->video)
+                                <div
+                                    class="h-32 rounded-lg overflow-hidden bg-black flex items-center justify-center border border-zinc-200/50">
+                                    <video src="{{ route('images.show', ['path' => $post->repostOf->video]) }}"
+                                        class="w-full h-full object-cover" controls></video>
+                                </div>
+                            @endif
+                        </div>
                     @endif
                 </div>
 
