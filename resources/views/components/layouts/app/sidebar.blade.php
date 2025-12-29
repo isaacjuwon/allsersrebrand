@@ -21,6 +21,10 @@
                 <flux:navlist.group :heading="__('Platform')" class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
                         wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                    <flux:navlist.item icon="fire" :href="route('challenges.index')"
+                        :current="request()->routeIs('challenges.*') || request()->routeIs('challenge.*')" wire:navigate>
+                        {{ __('Challenges') }}
+                    </flux:navlist.item>
                 </flux:navlist.group>
 
                 <flux:navlist.group :heading="__('Apps')" class="grid mt-4">

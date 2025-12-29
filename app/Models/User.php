@@ -184,4 +184,29 @@ class User extends Authenticatable //implements MustVerifyEmail
     {
         return $this->hasMany(Report::class);
     }
+
+    public function challenges()
+    {
+        return $this->hasMany(Challenge::class, 'creator_id');
+    }
+
+    public function participatingChallenges()
+    {
+        return $this->belongsToMany(Challenge::class, 'challenge_participants')
+            ->withPivot('joined_at');
+    }
+
+    public function judgingChallenges()
+    {
+        return $this->belongsToMany(Challenge::class, 'challenge_judges')
+            ->withPivot('status')
+            ->withTimestamps();
+    }
+
+    public function badges()
+    {
+        return $this->belongsToMany(Badge::class, 'user_badges')
+            ->withPivot('awarded_at')
+            ->withTimestamps();
+    }
 }

@@ -14,7 +14,7 @@ new class extends Component {
 
         <!-- Right Sidebar (Trending & Pros) -->
         <div class="hidden lg:block w-80 space-y-6">
-            @include('partials.trending-widget')
+            <livewire:challenge.trending-widget />
             @include('partials.pros-widget')
         </div>
     </div>

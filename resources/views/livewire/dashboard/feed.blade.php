@@ -294,10 +294,26 @@ new class extends Component {
                             @endif
                         </div>
                     </div>
-                    <div class="flex-1 space-y-3">
+                    <div class="flex-1 space-y-3" x-data="{ 
+                        insertEmoji(emoji) {
+                            const el = $wire.$el.querySelector('textarea');
+                            const start = el.selectionStart;
+                            const end = el.selectionEnd;
+                            const text = $wire.content;
+                            $wire.content = text.substring(0, start) + emoji + text.substring(end);
+                            el.focus();
+                            setTimeout(() => el.setSelectionRange(start + emoji.length, start + emoji.length), 0);
+                        }
+                    }">
                         <textarea wire:model="content" placeholder="{{ __('Share your recent work...') }}"
                             class="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[var(--color-brand-purple)]/20 transition-all resize-none"
                             rows="3"></textarea>
+                        
+                        <div class="flex flex-wrap gap-2 px-1">
+                            @foreach(['🔥', '✨', '🛠️', '🎨', '🚀', '⭐', '💎', '🏆', '👏', '🙌'] as $emoji)
+                                <button type="button" @click="insertEmoji('{{ $emoji }}')" class="text-sm hover:scale-125 transition-transform p-0.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800">{{ $emoji }}</button>
+                            @endforeach
+                        </div>
 
                         @error('content')
                             <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -547,7 +563,7 @@ new class extends Component {
                             <flux:icon name="chat-bubble-left" class="size-5" />
                             <span class="text-sm font-medium">{{ $post->all_comments_count ?? 0 }}</span>
                         </button>
-                        @if(auth()->user()->isArtisan())
+                        @if(auth()->user()->isArtisan() && $post->canBeReposted())
                             <button wire:click="openRepostModal({{ $post->id }})"
                                 class="flex items-center gap-1.5 text-zinc-500 hover:text-green-500 transition-colors"
                                 title="{{ __('Repost Work') }}">

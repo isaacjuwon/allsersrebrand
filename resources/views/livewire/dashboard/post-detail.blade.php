@@ -366,10 +366,12 @@ new class extends Component {
                                                 class="text-[10px] text-zinc-400">{{ $comment->created_at->diffForHumans() }}</span>
                                         </div>
                                         <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ $comment->content }}</p>
-                                        <button wire:click="setReplyTo({{ $comment->id }})"
-                                            class="text-[10px] font-bold text-[var(--color-brand-purple)] hover:underline">
-                                            {{ __('Reply') }}
-                                        </button>
+                                        @if(!$post->challenge_id)
+                                            <button wire:click="setReplyTo({{ $comment->id }})"
+                                                class="text-[10px] font-bold text-[var(--color-brand-purple)] hover:underline">
+                                                {{ __('Reply') }}
+                                            </button>
+                                        @endif
 
                                         <!-- Replies -->
                                         @if($comment->replies->count() > 0)
@@ -434,10 +436,27 @@ new class extends Component {
                                 {{ auth()->user()->initials() }}
                             @endif
                         </div>
-                        <div class="flex-1 relative">
+                        <div class="flex-1 relative" x-data="{ 
+                            insertEmoji(emoji) {
+                                const el = $wire.$el.querySelector('input[type=text]');
+                                const start = el.selectionStart;
+                                const end = el.selectionEnd;
+                                const text = $wire.commentContent;
+                                $wire.commentContent = text.substring(0, start) + emoji + text.substring(end);
+                                el.focus();
+                                setTimeout(() => el.setSelectionRange(start + emoji.length, start + emoji.length), 0);
+                            }
+                        }">
                             <input wire:model="commentContent" type="text" placeholder="{{ __('Write a comment...') }}"
-                                class="w-full bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-full pl-4 pr-10 py-2 text-sm focus:ring-1 focus:ring-[var(--color-brand-purple)] focus:border-[var(--color-brand-purple)]"
+                                class="w-full bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-full pl-4 pr-20 py-2 text-sm focus:ring-1 focus:ring-[var(--color-brand-purple)] focus:border-[var(--color-brand-purple)]"
                                 wire:keydown.enter="addComment">
+                            
+                            <div class="absolute right-10 top-2 flex items-center gap-1">
+                                @foreach(['🔥', '👍', '❤️'] as $emoji)
+                                    <button type="button" @click="insertEmoji('{{ $emoji }}')" class="hover:scale-125 transition-transform text-xs p-1">{{ $emoji }}</button>
+                                @endforeach
+                            </div>
+
                             <button wire:click="addComment"
                                 class="absolute right-2 top-1.5 text-[var(--color-brand-purple)] hover:scale-110 transition-transform p-1">
                                 <flux:icon name="paper-airplane" class="size-4" />

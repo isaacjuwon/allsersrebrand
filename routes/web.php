@@ -46,6 +46,12 @@ Route::middleware(['auth'])->group(function () {
 
     // Admin routes
     Volt::route('admin/reports', 'admin.reports')->name('admin.reports');
+
+    // Challenge routes
+    Volt::route('challenges', 'pages.challenges.index')->name('challenges.index');
+    Volt::route('challenges/create', 'pages.challenges.create')->name('challenges.create');
+    Volt::route('challenge/{slug}', 'pages.challenges.show')->name('challenges.show');
+    Volt::route('challenge/{slug}/manage', 'pages.challenges.manage')->name('challenges.manage');
 });
 
 Route::get('/images/{path}', function ($path) {

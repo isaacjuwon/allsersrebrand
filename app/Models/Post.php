@@ -15,6 +15,8 @@ class Post extends Model
         'images',
         'video',
         'repost_of_id',
+        'challenge_id',
+        'is_challenge_pinned',
     ];
 
     public function repostOf()
@@ -23,8 +25,32 @@ class Post extends Model
     }
 
     protected $casts = [
-        // Images will be stored as comma-separated string
+        'is_challenge_pinned' => 'boolean',
     ];
+
+    public function challenge()
+    {
+        return $this->belongsTo(Challenge::class);
+    }
+
+    public function ratings()
+    {
+        return $this->hasMany(ChallengeRating::class);
+    }
+
+    public function averageRating()
+    {
+        return $this->ratings()->avg('rating');
+    }
+
+    /**
+     * Check if this post can be reposted.
+     * Challenge posts cannot be reposted per requirements.
+     */
+    public function canBeReposted(): bool
+    {
+        return is_null($this->challenge_id);
+    }
 
     protected static function boot()
     {
@@ -140,6 +166,19 @@ class Post extends Model
             $username = $matches[2];
             $url = route('artisan.profile', $username);
             return $whitespace . '<a href="' . $url . '" class="text-[var(--color-brand-purple)] font-bold hover:underline">@' . $username . '</a>';
+        }, $escaped);
+
+        // 3. Convert #hashtags to links
+        $hashtagPattern = '/#([a-zA-Z0-9_]+)/';
+        $escaped = preg_replace_callback($hashtagPattern, function ($matches) {
+            $hashtag = $matches[1];
+            // Check if this hashtag corresponds to a challenge
+            $challenge = \App\Models\Challenge::where('hashtag', $hashtag)->first();
+            if ($challenge) {
+                $url = route('challenges.show', $challenge->custom_link);
+                return '<a href="' . $url . '" class="text-blue-500 font-bold hover:underline">#' . $hashtag . '</a>';
+            }
+            return '<span class="text-blue-400">#' . $hashtag . '</span>';
         }, $escaped);
 
         return $escaped;

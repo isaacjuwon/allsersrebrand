@@ -172,7 +172,7 @@ new class extends Component {
                 </div>
                 <div class="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
                     <flux:icon name="calendar-days" class="size-4" />
-                    {{ __('Joined') }} {{ $user->created_at->format('M Y') }}
+                    {{ __('Joined') }} {{ \Carbon\Carbon::parse($user->created_at)->format('M Y') }}
                 </div>
                 <div class="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-400">
                     <span class="font-bold text-zinc-900 dark:text-zinc-100">{{ count($posts) }}</span>
@@ -184,6 +184,35 @@ new class extends Component {
                 <p class="mt-6 text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed max-w-2xl">
                     {{ $user->bio }}
                 </p>
+            @endif
+
+            <!-- Awarded Badges Section -->
+            @if($user->badges->count() > 0)
+                <div class="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800">
+                    <h3 class="text-[10px] uppercase font-bold tracking-widest text-zinc-400 mb-4">{{ __('Special Badges & Awards') }}</h3>
+                    <div class="flex flex-wrap gap-4">
+                        @foreach($user->badges as $badge)
+                            <div class="group relative flex flex-col items-center gap-2">
+                                <div class="size-16 rounded-2xl bg-gradient-to-br from-yellow-400/20 to-orange-500/20 dark:from-yellow-400/10 dark:to-orange-500/10 p-2 border border-yellow-400/30 flex items-center justify-center transition-all hover:scale-110 hover:shadow-lg shadow-yellow-500/10">
+                                    @if($badge->icon_url)
+                                        <img src="{{ asset('storage/' . $badge->icon_url) }}" class="size-full object-contain">
+                                    @else
+                                        <flux:icon name="trophy" class="size-8 text-yellow-500" />
+                                    @endif
+                                </div>
+                                <span class="text-[10px] font-black text-zinc-900 dark:text-white text-center w-20 leading-tight uppercase tracking-tighter">{{ $badge->name }}</span>
+                                
+                                <!-- Tooltip on hover -->
+                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-zinc-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity text-center z-20">
+                                    <p class="font-bold">{{ $badge->name }}</p>
+                                    <p class="text-zinc-400 mt-1">{{ $badge->description }}</p>
+                                    <p class="text-[8px] mt-2 text-yellow-400">{{ __('Awarded') }}: {{ \Carbon\Carbon::parse($badge->pivot->awarded_at)->format('M Y') }}</p>
+                                    <div class="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-zinc-900"></div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
             @endif
         </div>
     </div>
