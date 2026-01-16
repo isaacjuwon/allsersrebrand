@@ -78,7 +78,7 @@ new class extends Component {
                     <div class="flex items-center gap-2 text-sm">
                         <h3 @if (auth()->id() !== $post->user_id) wire:click.stop="window.location.href='{{ route('artisan.profile', $post->user) }}'" @endif
                             class="font-bold text-zinc-900 dark:text-zinc-100 @if (auth()->id() !== $post->user_id) hover:text-[var(--color-brand-purple)] cursor-pointer @endif">
-                            {{ $post->user->name }}
+                            {{ $post->user->username }}
                         </h3>
                         @if ($post->repost_of_id)
                             <div
@@ -286,7 +286,7 @@ new class extends Component {
                 copied: false,
                 share() {
                     const shareData = {
-                        title: 'Post by {{ $post->user->name }}',
+                        title: 'Post by {{ $post->user->username }}',
                         text: 'Check out this post on Allsers: {{ Str::limit($post->content, 50) }}',
                         url: window.location.origin + '/dashboard?post={{ $post->post_id }}'
                     };

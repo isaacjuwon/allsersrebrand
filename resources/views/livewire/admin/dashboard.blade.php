@@ -455,7 +455,8 @@ new class extends Component {
                                 @endif
                             </div>
                             <div class="min-w-0">
-                                <p class="text-xs font-black text-zinc-900 dark:text-white">{{ $post->user->name }}
+                                <p class="text-xs font-black text-zinc-900 dark:text-white">
+                                    {{ $post->user->username }}
                                     <span
                                         class="text-zinc-400 font-normal">@<span>{{ $post->user->username }}</span></span>
                                 </p>

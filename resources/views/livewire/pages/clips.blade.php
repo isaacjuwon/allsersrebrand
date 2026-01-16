@@ -24,7 +24,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                 },
                 'bookmarks' => function ($query) {
                     $query->where('user_id', auth()->id());
-                }
+                },
             ])
             ->withCount(['likes', 'allComments'])
             ->latest()
@@ -43,8 +43,9 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function toggleLike($postId)
     {
         $post = Post::find($postId);
-        if (!$post)
+        if (!$post) {
             return;
+        }
 
         $user = auth()->user();
         $existingLike = $post->likes()->where('user_id', $user->id)->first();
@@ -63,8 +64,9 @@ new #[Layout('components.layouts.app')] class extends Component {
     public function toggleBookmark($postId)
     {
         $post = Post::find($postId);
-        if (!$post)
+        if (!$post) {
             return;
+        }
 
         $user = auth()->user();
         $existingBookmark = $post->bookmarks()->where('user_id', $user->id)->first();
@@ -82,35 +84,35 @@ new #[Layout('components.layouts.app')] class extends Component {
     class="h-[calc(100vh-5rem)] sm:h-[calc(100vh-6rem)] snap-y snap-mandatory overflow-y-scroll no-scrollbar -mx-4 sm:mx-auto max-w-md w-full relative sm:rounded-[2rem] overflow-hidden bg-black">
     @forelse($posts as $post)
         <div class="snap-start snap-always relative w-full h-full flex items-center justify-center bg-black overflow-hidden"
-            x-data="{ 
-                             playing: false,
-                             init() {
-                                 let observer = new IntersectionObserver((entries) => {
-                                     entries.forEach(entry => {
-                                         if (entry.isIntersecting) {
-                                             this.$refs.video.play().then(() => {
-                                                 this.playing = true;
-                                             }).catch(() => {
-                                                 this.playing = false;
-                                             });
-                                         } else {
-                                             this.$refs.video.pause();
-                                             this.playing = false;
-                                         }
-                                     });
-                                 }, { threshold: 0.6 });
-                                 observer.observe(this.$el);
-                             },
-                             togglePlay() {
-                                 if (this.$refs.video.paused) {
-                                     this.$refs.video.play();
-                                     this.playing = true;
-                                 } else {
-                                     this.$refs.video.pause();
-                                     this.playing = false;
-                                 }
-                             }
-                         }">
+            x-data="{
+                playing: false,
+                init() {
+                    let observer = new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                this.$refs.video.play().then(() => {
+                                    this.playing = true;
+                                }).catch(() => {
+                                    this.playing = false;
+                                });
+                            } else {
+                                this.$refs.video.pause();
+                                this.playing = false;
+                            }
+                        });
+                    }, { threshold: 0.6 });
+                    observer.observe(this.$el);
+                },
+                togglePlay() {
+                    if (this.$refs.video.paused) {
+                        this.$refs.video.play();
+                        this.playing = true;
+                    } else {
+                        this.$refs.video.pause();
+                        this.playing = false;
+                    }
+                }
+            }">
 
             <!-- Video -->
             <video x-ref="video" src="{{ route('images.show', ['path' => $post->video]) }}"
@@ -125,7 +127,8 @@ new #[Layout('components.layouts.app')] class extends Component {
             </div>
 
             <!-- Overlay Gradient -->
-            <div class="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/10 via-transparent to-black/60">
+            <div
+                class="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/10 via-transparent to-black/60">
             </div>
 
             <!-- Right Actions Side Bar -->
@@ -134,7 +137,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                 <button wire:click="toggleLike({{ $post->id }})" class="flex flex-col items-center gap-0.5 group">
                     <div
                         class="bg-zinc-800/50 backdrop-blur-md p-2 rounded-full transition-all group-hover:scale-110 {{ $post->isLikedBy(auth()->user()) ? 'text-red-500' : 'text-white' }}">
-                        @if($post->isLikedBy(auth()->user()))
+                        @if ($post->isLikedBy(auth()->user()))
                             <svg class="size-6 fill-current" viewBox="0 0 24 24">
                                 <path
                                     d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" />
@@ -159,10 +162,11 @@ new #[Layout('components.layouts.app')] class extends Component {
                 </button>
 
                 <!-- Bookmark -->
-                <button wire:click="toggleBookmark({{ $post->id }})" class="flex flex-col items-center gap-0.5 group">
+                <button wire:click="toggleBookmark({{ $post->id }})"
+                    class="flex flex-col items-center gap-0.5 group">
                     <div
                         class="bg-zinc-800/50 backdrop-blur-md p-2 rounded-full transition-all group-hover:scale-110 {{ $post->isBookmarkedBy(auth()->user()) ? 'text-[var(--color-brand-purple)]' : 'text-white' }}">
-                        @if($post->isBookmarkedBy(auth()->user()))
+                        @if ($post->isBookmarkedBy(auth()->user()))
                             <svg class="size-6 fill-current" viewBox="0 0 24 24">
                                 <path d="M6 2c-1.1 0-2 .9-2 2v18l8-3.5 8 3.5V4c0-1.1-.9-2-2-2H6z" />
                             </svg>
@@ -186,7 +190,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                 <!-- Creator Avatar (Navigates to profile) -->
                 <a href="{{ route('artisan.profile', $post->user) }}" wire:navigate class="relative mt-2">
                     <div class="size-10 rounded-full border-2 border-white overflow-hidden bg-zinc-800">
-                        @if($post->user->profile_picture_url)
+                        @if ($post->user->profile_picture_url)
                             <img src="{{ $post->user->profile_picture_url }}" class="size-full object-cover">
                         @else
                             <span
@@ -204,7 +208,7 @@ new #[Layout('components.layouts.app')] class extends Component {
             <div class="absolute bottom-4 left-4 right-16 z-20 text-white pb-safe">
                 <a href="{{ route('artisan.profile', $post->user) }}" wire:navigate
                     class="flex items-center gap-2 mb-2 hover:opacity-80 transition-opacity w-fit">
-                    <h3 class="font-bold text-lg drop-shadow-md text-sm">{{ $post->user->name }}</h3>
+                    <h3 class="font-bold text-lg drop-shadow-md text-sm">{{ $post->user->username }}</h3>
                     <span
                         class="bg-[var(--color-brand-purple)] text-white text-[8px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide border border-white/20">
                         {{ $post->user->work ?? __('Artisan') }}
@@ -212,7 +216,7 @@ new #[Layout('components.layouts.app')] class extends Component {
                     <span class="text-xs text-white/80">• {{ $post->created_at->diffForHumans() }}</span>
                 </a>
 
-                @if($post->content)
+                @if ($post->content)
                     <div class="max-h-24 overflow-y-auto pr-2 no-scrollbar">
                         <p class="text-xs text-white/90 drop-shadow-md font-medium leading-relaxed whitespace-pre-line">
                             {!! $post->formatted_content !!}

@@ -24,13 +24,11 @@ new class extends Component {
 
     public function setRating($stars)
     {
-        if (!$this->isJudge)
+        if (!$this->isJudge) {
             return;
+        }
 
-        ChallengeRating::updateOrCreate(
-            ['post_id' => $this->post->id, 'user_id' => auth()->id()],
-            ['rating' => $stars]
-        );
+        ChallengeRating::updateOrCreate(['post_id' => $this->post->id, 'user_id' => auth()->id()], ['rating' => $stars]);
 
         $this->userRating = $stars;
         $this->dispatch('toast', type: 'success', title: 'Submitted', message: 'Your star rating has been recorded!');
@@ -41,11 +39,15 @@ new class extends Component {
 
     public function toggleLike()
     {
-        if (!auth()->check())
+        if (!auth()->check()) {
             return redirect()->route('login');
+        }
 
         if ($this->post->isLikedBy(auth()->user())) {
-            $this->post->likes()->where('user_id', auth()->id())->delete();
+            $this->post
+                ->likes()
+                ->where('user_id', auth()->id())
+                ->delete();
         } else {
             $this->post->likes()->create(['user_id' => auth()->id()]);
         }
@@ -62,14 +64,14 @@ new class extends Component {
             <div class="flex items-center gap-3">
                 <a href="{{ route('artisan.profile', $post->user) }}"
                     class="size-12 rounded-full overflow-hidden bg-zinc-100 hover:opacity-80 transition-opacity">
-                    @if($post->user->profile_picture_url)
+                    @if ($post->user->profile_picture_url)
                         <img src="{{ $post->user->profile_picture_url }}" class="size-full object-cover">
                     @endif
                 </a>
                 <div>
                     <div class="flex items-center gap-2">
-                        <h3 class="font-bold text-zinc-900 dark:text-white capitalize">{{ $post->user->name }}</h3>
-                        @if($post->user->judgingChallenges()->where('challenges.id', $post->challenge_id)->where('challenge_judges.status', 'accepted')->exists())
+                        <h3 class="font-bold text-zinc-900 dark:text-white capitalize">{{ $post->user->username }}</h3>
+                        @if ($post->user->judgingChallenges()->where('challenges.id', $post->challenge_id)->where('challenge_judges.status', 'accepted')->exists())
                             <div
                                 class="px-2 py-0.5 rounded-full bg-[var(--color-brand-purple)] text-[8px] font-black text-white uppercase tracking-widest">
                                 {{ __('JUDGE') }}</div>
@@ -84,10 +86,14 @@ new class extends Component {
             </div>
 
             <!-- Pin Button (Only for Creator) -->
-            @if(auth()->id() === $post->challenge->creator_id)
-                <button wire:click="$parent.pinPost({{ $post->id }})" class="p-2 text-zinc-400 hover:text-zinc-600 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="{{ $post->is_challenge_pinned ? 'currentColor' : 'none' }}" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
+            @if (auth()->id() === $post->challenge->creator_id)
+                <button wire:click="$parent.pinPost({{ $post->id }})"
+                    class="p-2 text-zinc-400 hover:text-zinc-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                        fill="{{ $post->is_challenge_pinned ? 'currentColor' : 'none' }}" viewBox="0 0 24 24"
+                        stroke-width="1.5" stroke="currentColor" class="size-4">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
                     </svg>
                 </button>
             @endif
@@ -98,10 +104,11 @@ new class extends Component {
         </div>
 
         <!-- Media Display (Up to 4 images or 1 video) -->
-        @if($post->images)
+        @if ($post->images)
             @php $imgs = explode(',', $post->images); @endphp
-            <div class="grid {{ count($imgs) > 1 ? 'grid-cols-2' : 'grid-cols-1' }} gap-2 rounded-2xl overflow-hidden mb-6">
-                @foreach($imgs as $img)
+            <div
+                class="grid {{ count($imgs) > 1 ? 'grid-cols-2' : 'grid-cols-1' }} gap-2 rounded-2xl overflow-hidden mb-6">
+                @foreach ($imgs as $img)
                     <img src="{{ asset('storage/' . $img) }}"
                         class="w-full h-auto max-h-[400px] object-cover hover:scale-[1.02] transition-transform duration-500">
                 @endforeach
@@ -135,7 +142,7 @@ new class extends Component {
 
             <!-- Star Ratings (Judge functionality) -->
             <div class="flex items-center gap-1">
-                @for($i = 1; $i <= 5; $i++)
+                @for ($i = 1; $i <= 5; $i++)
                     <button wire:click="setRating({{ $i }})" {{ !$isJudge ? 'disabled' : '' }}
                         class="{{ $isJudge ? 'hover:scale-125 transition-transform' : 'cursor-default' }}">
                         <flux:icon name="star"

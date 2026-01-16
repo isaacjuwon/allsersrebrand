@@ -28,7 +28,7 @@ new class extends Component {
     public $posts = [];
     public $tab = 'for-you';
     public $page = 1;
-    public $perPage = 10;
+    public $perPage = 50;
     public $hasMore = true;
     public $loadingMore = false;
 
@@ -352,6 +352,13 @@ new class extends Component {
                 </div>
             @endif
         </button>
+
+        <div class="ml-auto flex items-center gap-2">
+            <a href="{{ route('finder') }}" wire:navigate
+                class="size-10 flex items-center justify-center rounded-full text-green-500 hover:text-green-600 transition-all bg-white dark:bg-zinc-800 shadow-sm border border-zinc-200 dark:border-zinc-700">
+                <flux:icon name="globe-americas" variant="solid" class="size-6 animate-spin [animation-duration:3s]" />
+            </a>
+        </div>
     </div>
 
     <livewire:global-search />
@@ -372,16 +379,16 @@ new class extends Component {
                         </div>
                     </div>
                     <div class="flex-1 space-y-3" x-data="{
-                            insertEmoji(emoji) {
-                                const el = $wire.$el.querySelector('textarea');
-                                const start = el.selectionStart;
-                                const end = el.selectionEnd;
-                                const text = $wire.content;
-                                $wire.content = text.substring(0, start) + emoji + text.substring(end);
-                                el.focus();
-                                setTimeout(() => el.setSelectionRange(start + emoji.length, start + emoji.length), 0);
-                            }
-                        }">
+                        insertEmoji(emoji) {
+                            const el = $wire.$el.querySelector('textarea');
+                            const start = el.selectionStart;
+                            const end = el.selectionEnd;
+                            const text = $wire.content;
+                            $wire.content = text.substring(0, start) + emoji + text.substring(end);
+                            el.focus();
+                            setTimeout(() => el.setSelectionRange(start + emoji.length, start + emoji.length), 0);
+                        }
+                    }">
                         <textarea wire:model="content" placeholder="{{ __('Share your recent work...') }}"
                             class="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[var(--color-brand-purple)]/20 transition-all resize-none"
                             rows="3"></textarea>
@@ -405,7 +412,8 @@ new class extends Component {
                             <div class="grid grid-cols-2 gap-2">
                                 @foreach ($images as $index => $image)
                                     <div class="relative group">
-                                        <img src="{{ $image->temporaryUrl() }}" class="w-full h-32 object-cover rounded-lg">
+                                        <img src="{{ $image->temporaryUrl() }}"
+                                            class="w-full h-32 object-cover rounded-lg">
                                         <button type="button" wire:click="removeImage({{ $index }})"
                                             class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <flux:icon name="x-mark" class="size-4" />
@@ -498,8 +506,8 @@ new class extends Component {
 
     <!-- Suggested Professionals (In-Feed) -->
     {{-- <div class="w-[calc(100-30)]"> --}}
-        <livewire:dashboard.pros-widget :in-feed="true" />
-        {{--
+    <livewire:dashboard.pros-widget :in-feed="true" />
+    {{--
     </div> --}}
 
     <!-- Feed Posts -->
@@ -586,7 +594,8 @@ new class extends Component {
 
                 <div class="flex gap-4">
                     @if ($repostImage)
-                        <div class="relative group size-20 rounded-lg overflow-hidden border border-zinc-200 shadow-sm">
+                        <div
+                            class="relative group size-20 rounded-lg overflow-hidden border border-zinc-200 shadow-sm">
                             <img src="{{ $repostImage->temporaryUrl() }}" class="size-full object-cover">
                             <button type="button" wire:click="$set('repostImage', null)"
                                 class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">

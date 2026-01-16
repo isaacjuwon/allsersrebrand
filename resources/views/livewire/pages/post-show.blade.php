@@ -222,7 +222,7 @@ new class extends Component {
                                 <h3
                                     class="font-bold text-zinc-900 dark:text-zinc-100 hover:text-[var(--color-brand-purple)] cursor-pointer">
                                     <a href="{{ route('artisan.profile', $post->user) }}"
-                                        wire:navigate>{{ $post->user->name }}</a>
+                                        wire:navigate>{{ $post->user->username }}</a>
                                 </h3>
                                 @if ($post->repost_of_id)
                                     <div
@@ -255,7 +255,7 @@ new class extends Component {
                                 copied: false,
                                 share() {
                                     const shareData = {
-                                        title: 'Post by {{ $post->user->name }}',
+                                        title: 'Post by {{ $post->user->username }}',
                                         text: 'Check out this post on Allsers',
                                         url: window.location.href
                                     };
@@ -414,7 +414,7 @@ new class extends Component {
                             copied: false,
                             share() {
                                 const shareData = {
-                                    title: 'Post by {{ $post->user->name }}',
+                                    title: 'Post by {{ $post->user->username }}',
                                     text: 'Check out this post on Allsers',
                                     url: window.location.href
                                 };

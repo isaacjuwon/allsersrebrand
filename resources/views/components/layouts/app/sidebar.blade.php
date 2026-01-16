@@ -44,7 +44,7 @@
                     </flux:navlist.item>
                 </flux:navlist.group>
 
-                <flux:navlist.group :heading="__('Apps')" class="grid mt-4">
+                <flux:navlist.group :heading="__('Social')" class="grid mt-4">
                     <flux:navlist.item icon="chat-bubble-left-right" :href="route('chat')"
                         :current="request()->routeIs('chat*')" :badge="auth()->user()->unreadMessagesCount() ?: null"
                         wire:navigate>{{ __('Chat') }}</flux:navlist.item>
@@ -52,7 +52,7 @@
                         :badge="auth()->user()->unreadNotifications->count() ?: null" wire:navigate>
                         {{ __('Notifications') }}
                     </flux:navlist.item>
-                    <flux:navlist.item icon="bookmark" :href="route('bookmarks')" wire:navigate>{{ __('Bookmarks') }}
+                    <flux:navlist.item icon="bookmark" :href="route('bookmarks')" wire:navigate>{{ __('Saved') }}
                     </flux:navlist.item>
                     <flux:navlist.item icon="user" :href="route('artisan.profile', auth()->user())" wire:navigate>
                         {{ __('Profile') }}
