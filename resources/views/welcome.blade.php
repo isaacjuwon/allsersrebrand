@@ -404,7 +404,7 @@
             </div>
 
             <div class="max-w-7xl mx-auto px-4 mt-12">
-                <livewire:dashboard.pros-widget :in-feed="true" :limit="16" :isWelcome="true" />
+                <livewire:dashboard.pros-widget :in-feed="true" :limit="3" :isWelcome="true" />
             </div>
         </div>
     </section>
