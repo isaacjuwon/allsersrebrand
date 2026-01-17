@@ -110,7 +110,11 @@ Route::get('/images/{path}', function ($path) {
 
 // Storage route for production (fallback when symlink doesn't work)
 // Utility route to create storage symlink (useful for shared hosting)
-Route::get('/storage-link', function () {
-    Artisan::call('storage:link');
-    return 'Storage Linked successfully.';
+// Route::get('/storage-link', function () {
+//     Artisan::call('storage:link');
+//     return 'Storage Linked successfully.';
+// });
+Route::get('/sitemap', function () {
+    Artisan::call('sitemap:generate');
+    return 'Sitemap generated successfully.';
 });

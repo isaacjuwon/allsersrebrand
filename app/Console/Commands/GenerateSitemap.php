@@ -59,7 +59,7 @@ class GenerateSitemap extends Command
             });
 
         // Save sitemap
-        $sitemap->writeToFile('sitemap.xml');
+        $sitemap->writeToFile('./sitemap.xml');
 
         $this->info('Sitemap generated successfully!');
     }
