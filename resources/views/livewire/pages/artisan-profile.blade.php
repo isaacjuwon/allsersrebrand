@@ -18,9 +18,9 @@ new class extends Component {
 
     public function rendering($view)
     {
-        $title = $this->user->name . ' (@' . ($this->user->username ?? $this->user->id) . ') | ' . ($this->user->work ?? 'Artisan') . ' on Allsers';
-        $description = $this->user->bio ?? 'Explore the portfolio and services of ' . $this->user->name . ' on Allsers. Professional ' . ($this->user->work ?? 'Artisan') . ' available for hire.';
-        $image = $this->user->profile_picture_url ?? asset('assets/allsers.png');
+        $title = $this->user->name . ' (@' . ($this->user->username ?? 'artisan') . ') | ' . ($this->user->work ?? 'Professional Artisan') . ' on Allsers';
+        $description = $this->user->bio ?: 'Explore the professional portfolio and verified services of ' . $this->user->name . ' on Allsers. Hire trusted artisans with confidence.';
+        $image = $this->user->profile_picture_url ?: asset('assets/allsers.png');
 
         $view->title($title);
 
@@ -28,7 +28,7 @@ new class extends Component {
             'metaTitle' => $title,
             'metaDescription' => $description,
             'metaImage' => $image,
-            'metaUrl' => route('artisan.profile', $this->user),
+            'metaUrl' => route('artisan.profile', ['user' => $this->user->slug]),
         ]);
     }
 
@@ -92,23 +92,27 @@ new class extends Component {
 }; ?>
 
 @push('head')
+    <!-- Primary Meta Tags -->
+    <meta name="title" content="{{ $user->name }} | {{ $user->work ?? 'Verified Artisan' }} on Allsers">
+    <meta name="description"
+        content="{{ Str::limit($user->bio ?: 'Explore the professional portfolio and verified services of ' . $user->name . ' on Allsers. Hire trusted artisans with confidence.', 160) }}">
+
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ route('artisan.profile', $user) }}">
-    <meta property="og:title"
-        content="{{ $user->name }} ({{ $user->username ?? $user->id }}) | {{ $user->work ?? 'Artisan' }} on Allsers">
+    <meta property="og:type" content="profile">
+    <meta property="og:url" content="{{ route('artisan.profile', ['user' => $user->slug]) }}">
+    <meta property="og:title" content="{{ $user->name }} | {{ $user->work ?? 'Verified Artisan' }} on Allsers">
     <meta property="og:description"
-        content="{{ $user->bio ?? 'Explore the portfolio and services of ' . $user->name . ' on Allsers.' }}">
-    <meta property="og:image" content="{{ $user->profile_picture_url ?? asset('assets/allsers.png') }}">
+        content="{{ Str::limit($user->bio ?: 'Explore the professional portfolio and verified services of ' . $user->name . ' on Allsers. Hire trusted artisans with confidence.', 160) }}">
+    <meta property="og:image" content="{{ $user->profile_picture_url ?: asset('assets/allsers-social.png') }}">
+    <meta property="profile:username" content="{{ $user->username }}">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="{{ route('artisan.profile', $user) }}">
-    <meta property="twitter:title"
-        content="{{ $user->name }} ({{ $user->username ?? $user->id }}) | {{ $user->work ?? 'Artisan' }} on Allsers">
+    <meta property="twitter:url" content="{{ route('artisan.profile', ['user' => $user->slug]) }}">
+    <meta property="twitter:title" content="{{ $user->name }} | {{ $user->work ?? 'Verified Artisan' }} on Allsers">
     <meta property="twitter:description"
-        content="{{ $user->bio ?? 'Explore the portfolio and services of ' . $user->name . ' on Allsers.' }}">
-    <meta property="twitter:image" content="{{ $user->profile_picture_url ?? asset('assets/allsers.png') }}">
+        content="{{ Str::limit($user->bio ?: 'Explore the professional portfolio and verified services of ' . $user->name . ' on Allsers. Hire trusted artisans with confidence.', 160) }}">
+    <meta property="twitter:image" content="{{ $user->profile_picture_url ?: asset('assets/allsers-social.png') }}">
 @endpush
 
 <div class="max-w-4xl mx-auto px-4 py-8" x-data="{
