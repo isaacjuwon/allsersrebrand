@@ -243,6 +243,20 @@
     @fluxScripts
     @stack('scripts')
     <x-pwa-scripts />
+
+    <script>
+        // Ensure only one video plays at a time globally
+        document.addEventListener('play', function(e) {
+            if (e.target.tagName.toLowerCase() === 'video') {
+                const videos = document.getElementsByTagName('video');
+                for (let i = 0; i < videos.length; i++) {
+                    if (videos[i] !== e.target && !videos[i].paused) {
+                        videos[i].pause();
+                    }
+                }
+            }
+        }, true);
+    </script>
 </body>
 
 </html>

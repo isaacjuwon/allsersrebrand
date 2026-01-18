@@ -5,9 +5,8 @@ new class extends Component {
     // No specific logic needed, purely navigational
 }; ?>
 
-<div
-    class="flex items-center gap-6 mb-6 backdrop-blur-md sticky top-0 z-30">
-    <a href="{{ route('dashboard', ['tab' => 'for-you']) }}" wire:navigate
+<div class="flex items-center gap-6 mb-6 sticky top-0 z-30">
+    <a href="{{ route('dashboard', ['tab' => 'for-you']) }}"
         class="relative py-4 text-sm font-black uppercase tracking-widest transition-all {{ request('tab', 'for-you') === 'for-you' ? 'text-[var(--color-brand-purple)]' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}">
         {{ __('For You') }}
         @if (request('tab', 'for-you') === 'for-you')
@@ -16,7 +15,7 @@ new class extends Component {
             </div>
         @endif
     </a>
-    <a href="{{ route('dashboard', ['tab' => 'local']) }}" wire:navigate
+    <a href="{{ route('dashboard', ['tab' => 'local']) }}"
         class="relative py-4 text-sm font-black uppercase tracking-widest transition-all {{ request('tab') === 'local' ? 'text-[var(--color-brand-purple)]' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300' }}">
         {{ __('Local') }}
         @if (request('tab') === 'local')

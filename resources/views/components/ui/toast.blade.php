@@ -1,31 +1,31 @@
-<div x-data="{ 
-        notifications: [],
-        add(e) {
-            this.notifications.push({
-                id: e.detail.id || Date.now(),
-                type: e.detail.type || 'info',
-                title: e.detail.title || '',
-                message: e.detail.message || '',
-                autohide: e.detail.autohide ?? true,
-                timeout: e.detail.timeout || 5000
-            });
-        },
-        remove(id) {
-            this.notifications = this.notifications.filter(n => n.id !== id);
-        }
-    }" @toast.window="add($event)"
-    class="fixed bottom-4 right-4 z-[9999] flex flex-col gap-3 w-full max-w-sm pointer-events-none">
+<div x-data="{
+    notifications: [],
+    add(e) {
+        this.notifications.push({
+            id: e.detail.id || Date.now(),
+            type: e.detail.type || 'info',
+            title: e.detail.title || '',
+            message: e.detail.message || '',
+            autohide: e.detail.autohide ?? true,
+            timeout: e.detail.timeout || 5000
+        });
+    },
+    remove(id) {
+        this.notifications = this.notifications.filter(n => n.id !== id);
+    }
+}" @toast.window="add($event)"
+    class="fixed bottom-24 sm:bottom-10 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-3 w-[calc(100%-2rem)] max-w-xs sm:max-w-sm pointer-events-none">
     <template x-for="notification in notifications" :key="notification.id">
-        <div x-data="{ 
-                show: false,
-                init() {
-                    this.$nextTick(() => this.show = true);
-                    if (notification.autohide) {
-                        setTimeout(() => this.show = false, notification.timeout);
-                        setTimeout(() => this.remove(notification.id), notification.timeout + 500);
-                    }
+        <div x-data="{
+            show: false,
+            init() {
+                this.$nextTick(() => this.show = true);
+                if (notification.autohide) {
+                    setTimeout(() => this.show = false, notification.timeout);
+                    setTimeout(() => this.remove(notification.id), notification.timeout + 500);
                 }
-            }" x-show="show" x-transition:enter="transition ease-out duration-300 transform"
+            }
+        }" x-show="show" x-transition:enter="transition ease-out duration-300 transform"
             x-transition:enter-start="translate-y-4 opacity-0 scale-95"
             x-transition:enter-end="translate-y-0 opacity-100 scale-100"
             x-transition:leave="transition ease-in duration-200 transform"

@@ -5,12 +5,11 @@ use App\Models\User;
 use App\Notifications\UserTagged;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
-use Livewire\Attributes\On;
-use Livewire\Attributes\Url;
 use Livewire\Attributes\Validate;
+use App\Traits\HandlesPostActions;
 
 new class extends Component {
-    use WithFileUploads;
+    use WithFileUploads, HandlesPostActions;
 
     #[Validate('nullable|string|max:1000')]
     public $content = '';
@@ -38,12 +37,6 @@ new class extends Component {
     public $loadingMore = false;
     public $latestPostId = null;
     public $newPostsCount = 0;
-
-    public $repostingPostId = null;
-    public $repostContent = '';
-    public $repostImage = null;
-    public $repostVideo = null;
-    public $showRepostModal = false;
 
     public function mount()
     {
@@ -147,6 +140,17 @@ new class extends Component {
 
     public function checkNewPosts()
     {
+        // First, check if all current posts still exist in the database
+        // This prevents Livewire from 404ing during hydration if a post was deleted in another tab
+        $currentIds = collect($this->posts)->pluck('id');
+        if ($currentIds->isNotEmpty()) {
+            $existingCount = Post::whereIn('id', $currentIds)->count();
+            if ($existingCount < count($this->posts)) {
+                $this->loadPosts(true);
+                return;
+            }
+        }
+
         if (!$this->latestPostId) {
             return;
         }
@@ -163,76 +167,6 @@ new class extends Component {
     public function loadNewPosts()
     {
         $this->loadPosts(true);
-    }
-
-    public function openRepostModal($postId)
-    {
-        if (!auth()->user()->isArtisan()) {
-            $this->dispatch('toast', type: 'error', title: 'Permission Denied', message: 'Only artisans can repost.');
-            return;
-        }
-        $this->repostingPostId = $postId;
-        $this->repostContent = '';
-        $this->repostImage = null;
-        $this->repostVideo = null;
-        $this->showRepostModal = true;
-    }
-
-    public function createRepost()
-    {
-        try {
-            $this->validate([
-                'repostContent' => 'nullable|string|max:1000',
-                'repostImage' => 'nullable|image|max:10240',
-                'repostVideo' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:10240',
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            foreach ($e->validator->errors()->getMessages() as $field => $messages) {
-                if (str_contains($field, 'repostImage') || str_contains($field, 'repostVideo')) {
-                    if (str_contains(implode(' ', $messages), 'kilobytes') || str_contains(implode(' ', $messages), 'large')) {
-                        $this->dispatch('toast', type: 'error', title: 'File Too Large', message: 'Images and videos must be less than 10MB.');
-                        break;
-                    }
-                }
-            }
-            throw $e;
-        }
-
-        $imagePath = $this->repostImage ? $this->repostImage->store('posts/images', 'public') : null;
-        $videoPath = $this->repostVideo ? $this->repostVideo->store('posts/videos', 'public') : null;
-
-        $post = Post::create([
-            'user_id' => auth()->id(),
-            'repost_of_id' => $this->repostingPostId,
-            'content' => $this->repostContent,
-            'images' => $imagePath,
-            'video' => $videoPath,
-        ]);
-
-        $this->notifyMentionedUsers($post);
-
-        $this->showRepostModal = false;
-        $this->loadPosts();
-        $this->dispatch('toast', type: 'success', title: 'Reposted!', message: 'Your repost has been published.');
-    }
-
-    public function toggleBookmark($postId)
-    {
-        $post = Post::find($postId);
-        if (!$post) {
-            return;
-        }
-
-        $user = auth()->user();
-        $existingBookmark = $post->bookmarks()->where('user_id', $user->id)->first();
-
-        if ($existingBookmark) {
-            $existingBookmark->delete();
-        } else {
-            $post->bookmarks()->create(['user_id' => $user->id]);
-        }
-
-        $this->loadPosts();
     }
 
     public function createPost()
@@ -323,7 +257,7 @@ new class extends Component {
 
         foreach ($users as $user) {
             if ($user->id !== auth()->id()) {
-                $user->notify(new UserTagged($post, auth()->user()));
+                $user->notify(new \App\Notifications\UserTagged($post, auth()->user()));
             }
         }
     }
@@ -338,38 +272,10 @@ new class extends Component {
     {
         $this->video = null;
     }
-
-    public $showReportModal = false;
-    public $reportPostId = null;
-    public $reportReason = '';
-
-    public function openReportModal($postId)
-    {
-        $this->reportPostId = $postId;
-        $this->showReportModal = true;
-        $this->reportReason = '';
-    }
-
-    public function submitReport()
-    {
-        $this->validate([
-            'reportReason' => 'required|string|min:10|max:500',
-        ]);
-
-        \App\Models\Report::create([
-            'user_id' => auth()->id(),
-            'post_id' => $this->reportPostId,
-            'reason' => $this->reportReason,
-            'status' => 'pending',
-        ]);
-
-        $this->showReportModal = false;
-        $this->dispatch('toast', type: 'success', title: 'Report Submitted', message: 'Thank you for reporting. We will review this post.');
-    }
 }; ?>
 
 <div class="space-y-6">
-    <div wire:poll.15s="checkNewPosts"></div>
+    <div wire:poll.10s="checkNewPosts"></div>
 
     <livewire:dashboard.navigation />
 
@@ -402,16 +308,16 @@ new class extends Component {
                         </div>
                     </div>
                     <div class="flex-1 min-w-0 space-y-2" x-data="{
-                                    insertEmoji(emoji) {
-                                        const el = $wire.$el.querySelector('textarea');
-                                        const start = el.selectionStart;
-                                        const end = el.selectionEnd;
-                                        const text = $wire.content;
-                                        $wire.content = text.substring(0, start) + emoji + text.substring(end);
-                                        el.focus();
-                                        setTimeout(() => el.setSelectionRange(start + emoji.length, start + emoji.length), 0);
-                                    }
-                                }">
+                        insertEmoji(emoji) {
+                            const el = $wire.$el.querySelector('textarea');
+                            const start = el.selectionStart;
+                            const end = el.selectionEnd;
+                            const text = $wire.content;
+                            $wire.content = text.substring(0, start) + emoji + text.substring(end);
+                            el.focus();
+                            setTimeout(() => el.setSelectionRange(start + emoji.length, start + emoji.length), 0);
+                        }
+                    }">
                         <textarea wire:model="content" placeholder="{{ __('Share your work...') }}"
                             class="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl px-3 py-2 text-xs md:text-sm focus:ring-2 focus:ring-[var(--color-brand-purple)]/20 transition-all resize-none"
                             rows="2"></textarea>
@@ -435,10 +341,11 @@ new class extends Component {
                             <div class="grid grid-cols-2 gap-2">
                                 @foreach ($images as $index => $image)
                                     <div class="relative group">
-                                        <img src="{{ $image->temporaryUrl() }}" class="w-full h-24 object-cover rounded-lg">
+                                        <img src="{{ $image->temporaryUrl() }}"
+                                            class="w-full h-24 object-cover rounded-lg">
                                         <button type="button" wire:click="removeImage({{ $index }})"
-                                            class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <flux:icon name="x-mark" class="size-3" />
+                                            class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                            <flux:icon name="x-mark" class="size-4" />
                                         </button>
                                     </div>
                                 @endforeach
@@ -451,8 +358,8 @@ new class extends Component {
                                 <video src="{{ $video->temporaryUrl() }}" class="w-full h-32 object-cover rounded-lg"
                                     controls></video>
                                 <button type="button" wire:click="removeVideo"
-                                    class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <flux:icon name="x-mark" class="size-3" />
+                                    class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                    <flux:icon name="x-mark" class="size-4" />
                                 </button>
                             </div>
                         @endif
@@ -521,8 +428,8 @@ new class extends Component {
 
     <!-- Suggested Professionals (In-Feed) -->
     {{-- <div class="w-[calc(100-30)]"> --}}
-        <livewire:dashboard.pros-widget :in-feed="true" />
-        {{--
+    <livewire:dashboard.pros-widget :in-feed="true" />
+    {{--
     </div> --}}
 
     <!-- Feed Posts -->
@@ -580,112 +487,5 @@ new class extends Component {
         @endif
     </div>
 
-    <!-- Repost Modal -->
-    <flux:modal name="repost-modal" wire:model="showRepostModal" class="sm:max-w-lg">
-        <div class="space-y-6">
-            <div>
-                <flux:heading size="lg">{{ __('Repost Work') }}</flux:heading>
-                <flux:subheading>{{ __('Repost this work and add your own progress or feedback.') }}</flux:subheading>
-            </div>
-
-            <div class="space-y-4">
-                <flux:textarea wire:model="repostContent" placeholder="{{ __('Add your thoughts or progress...') }}"
-                    rows="3" />
-
-                <div class="flex items-center gap-4">
-                    <label
-                        class="flex items-center gap-2 text-zinc-500 hover:text-[var(--color-brand-purple)] text-sm font-medium transition-colors cursor-pointer">
-                        <flux:icon name="photo" class="size-5" />
-                        <span>{{ __('Add Image') }}</span>
-                        <input type="file" wire:model="repostImage" accept="image/*" class="hidden">
-                    </label>
-                    <label
-                        class="flex items-center gap-2 text-zinc-500 hover:text-[var(--color-brand-purple)] text-sm font-medium transition-colors cursor-pointer">
-                        <flux:icon name="video-camera" class="size-5" />
-                        <span>{{ __('Add Video') }}</span>
-                        <input type="file" wire:model="repostVideo" accept="video/*" class="hidden">
-                    </label>
-                </div>
-
-                <div class="flex gap-4">
-                    @if ($repostImage)
-                        <div class="relative group size-20 rounded-lg overflow-hidden border border-zinc-200 shadow-sm">
-                            <img src="{{ $repostImage->temporaryUrl() }}" class="size-full object-cover">
-                            <button type="button" wire:click="$set('repostImage', null)"
-                                class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <flux:icon name="x-mark" class="size-3" />
-                            </button>
-                        </div>
-                    @endif
-
-                    @if ($repostVideo)
-                        <div
-                            class="relative group size-20 rounded-lg overflow-hidden border border-zinc-200 flex items-center justify-center bg-zinc-100 shadow-sm">
-                            <flux:icon name="video-camera" class="size-8 text-zinc-400" />
-                            <button type="button" wire:click="$set('repostVideo', null)"
-                                class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <flux:icon name="x-mark" class="size-3" />
-                            </button>
-                        </div>
-                    @endif
-                </div>
-
-                <div wire:loading wire:target="repostImage,repostVideo" class="text-xs text-zinc-500 italic">
-                    {{ __('Uploading asset...') }}
-                </div>
-            </div>
-
-            <div class="flex gap-2 justify-end">
-                <flux:modal.close>
-                    <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
-                </flux:modal.close>
-                <flux:button variant="primary" wire:click="createRepost" wire:loading.attr="disabled">
-                    <span wire:loading.remove wire:target="createRepost">{{ __('Repost') }}</span>
-                    <span wire:loading wire:target="createRepost" class="flex items-center gap-2">
-                        {{ __('Publishing...') }}
-                    </span>
-                </flux:button>
-            </div>
-        </div>
-    </flux:modal>
-
-    <!-- Report Post Modal -->
-    <flux:modal name="report-post-modal" wire:model="showReportModal" class="sm:max-w-lg">
-        <div class="space-y-6">
-            <div>
-                <flux:heading size="lg">Report Post</flux:heading>
-                <flux:subheading>Help us understand what's wrong with this post</flux:subheading>
-            </div>
-
-            <div class="space-y-4">
-                <div>
-                    <flux:label>Reason for Report *</flux:label>
-                    <flux:textarea wire:model="reportReason" rows="4"
-                        placeholder="Please describe why you're reporting this post (minimum 10 characters)..." />
-                    @error('reportReason')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 text-sm text-zinc-600 dark:text-zinc-400">
-                    <p class="font-medium mb-2">Common reasons for reporting:</p>
-                    <ul class="list-disc list-inside space-y-1 text-xs">
-                        <li>Spam or misleading content</li>
-                        <li>Harassment or hate speech</li>
-                        <li>Violence or dangerous content</li>
-                        <li>Inappropriate or offensive material</li>
-                        <li>Copyright infringement</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="flex gap-2 justify-end">
-                <flux:modal.close>
-                    <flux:button variant="ghost">Cancel</flux:button>
-                </flux:modal.close>
-                <flux:button variant="danger" wire:click="submitReport">Submit Report</flux:button>
-            </div>
-        </div>
-    </flux:modal>
-
+    @include('partials.post-modals')
 </div>

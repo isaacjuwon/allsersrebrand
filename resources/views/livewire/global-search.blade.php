@@ -92,7 +92,7 @@ new class extends Component {
                     </h3>
                     <div class="space-y-1">
                         @foreach ($posts as $post)
-                            <button @click="$dispatch('open-post-detail', { postId: {{ $post->id }} })"
+                            <a href="{{ route('posts.show', $post->post_id) }}" wire:navigate
                                 class="w-full flex items-start gap-3 p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-lg transition-colors text-left group">
                                 <div
                                     class="size-8 rounded-full bg-zinc-100 flex items-center justify-center overflow-hidden shrink-0">
@@ -115,7 +115,7 @@ new class extends Component {
                                         {{ $post->content }}
                                     </p>
                                 </div>
-                            </button>
+                            </a>
                         @endforeach
                     </div>
                 </div>

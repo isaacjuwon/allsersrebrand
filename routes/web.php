@@ -108,13 +108,23 @@ Route::get('/images/{path}', function ($path) {
     return response()->file($filePath);
 })->where('path', '.*')->name('images.show');
 
-// Storage route for production (fallback when symlink doesn't work)
-// Utility route to create storage symlink (useful for shared hosting)
+// Utility routes for production maintenance
+Route::get('/clear-all-cache', function () {
+    Artisan::call('optimize:clear');
+    return "Optimize cache cleared successfully!";
+});
+
 // Route::get('/storage-link', function () {
 //     Artisan::call('storage:link');
 //     return 'Storage Linked successfully.';
 // });
-Route::get('/sitemap', function () {
+
+Route::get('/generate-sitemap', function () {
     Artisan::call('sitemap:generate');
     return 'Sitemap generated successfully.';
+});
+
+Route::get('/generate-user-slugs', function () {
+    Artisan::call('users:generate-slugs');
+    return 'User slugs generated successfully.';
 });

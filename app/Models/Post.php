@@ -21,6 +21,8 @@ class Post extends Model
         'price_max',
     ];
 
+    protected $withCount = ['likes', 'allComments'];
+
     public function repostOf()
     {
         return $this->belongsTo(Post::class, 'repost_of_id');

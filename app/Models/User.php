@@ -26,6 +26,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'role',
         'is_admin',
         'username',
+        'slug',
         'profile_picture',
         'gender',
         'work',
@@ -72,6 +73,22 @@ class User extends Authenticatable implements MustVerifyEmail
             'banned_until' => 'datetime',
             'is_admin' => 'boolean',
         ];
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($user) {
+            if (empty($user->slug)) {
+                $user->slug = Str::slug($user->name) . '-' . Str::random(8);
+            }
+        });
     }
 
     public function initials(): string

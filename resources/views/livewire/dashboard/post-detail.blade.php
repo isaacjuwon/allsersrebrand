@@ -2,6 +2,7 @@
 
 use App\Models\Post;
 use App\Models\Comment;
+use App\Models\Conversation;
 use Livewire\Volt\Component;
 use Livewire\Attributes\On;
 
@@ -123,6 +124,28 @@ new class extends Component {
         } else {
             $this->dispatch('toast', type: 'error', title: 'Error', message: 'You cannot delete this post.');
         }
+    }
+
+    public function startConversation()
+    {
+        $userId = $this->post->user->id;
+        $authId = auth()->id();
+
+        // Find conversation with both users
+        $conversation = auth()
+            ->user()
+            ->conversations()
+            ->whereHas('users', function ($query) use ($userId) {
+                $query->where('users.id', $userId);
+            })
+            ->first();
+
+        if (!$conversation) {
+            $conversation = Conversation::create();
+            $conversation->users()->attach([$authId, $userId]);
+        }
+
+        return $this->redirect(route('chat', $conversation->id), navigate: true);
     }
 
     public $showReportModal = false;
@@ -381,11 +404,11 @@ new class extends Component {
                                     </span>
                                 </button> --}}
                                 @if ($post->user_id !== auth()->id())
-                                    <a href="{{ route('artisan.profile', $post->user) }}" wire:navigate
+                                    <button wire:click="startConversation"
                                         class="flex items-center gap-1.5 border border-[var(--color-brand-purple)] text-[var(--color-brand-purple)] px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[var(--color-brand-purple)] hover:text-white transition-all">
                                         <flux:icon name="chat-bubble-left-right" class="size-3.5" />
                                         {{ __('Chat') }}
-                                    </a>
+                                    </button>
                                 @endif
                             </div>
                         </div>

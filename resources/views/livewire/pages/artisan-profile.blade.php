@@ -5,11 +5,14 @@ use App\Models\Post;
 use App\Models\Conversation;
 use Livewire\Volt\Component;
 use Livewire\Attributes\On;
+use Livewire\WithFileUploads;
+use App\Traits\HandlesPostActions;
 use function Livewire\Volt\layout;
 
 layout('components.layouts.app');
 
 new class extends Component {
+    use WithFileUploads, HandlesPostActions;
     public User $user;
     public $posts = [];
 
@@ -254,4 +257,5 @@ new class extends Component {
 
     <!-- Modals -->
     <livewire:dashboard.post-detail />
+    @include('partials.post-modals')
 </div>

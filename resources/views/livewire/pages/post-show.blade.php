@@ -222,7 +222,7 @@ new class extends Component {
 
 
 <div>
-    <div class="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div class="max-w-2xl mx-auto p-2 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
         <livewire:dashboard.navigation />
         <div
             class="bg-white dark:bg-zinc-900 rounded-2xl p-5 shadow-sm border border-zinc-200 dark:border-zinc-800 relative">
@@ -415,7 +415,7 @@ new class extends Component {
                 @endif
 
                 <!-- Stats & Actions -->
-                <div class="flex items-center justify-between pt-4 border-t border-zinc-50 dark:border-zinc-800/50">
+                <div class="flex items-center justify-between pt-4">
                     <div class="flex items-center gap-6">
                         <button wire:click="toggleLike"
                             @click="new Audio('{{ asset('assets/mixkit-cartoon-toy-whistle-616.wav') }}').play()"
@@ -475,7 +475,7 @@ new class extends Component {
             </div>
 
             <!-- Comments Section -->
-            <div class="space-y-6 pt-6 border-t border-zinc-100 dark:border-zinc-800">
+            <div class="space-y-6 pt-6">
                 <h4 class="font-bold text-zinc-900 dark:text-zinc-100">{{ __('Comments') }}</h4>
 
                 <div class="space-y-6">
@@ -578,28 +578,28 @@ new class extends Component {
                         </button>
                     </div>
                 @endif
-                <div class="flex items-center gap-2">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full">
                     <div
-                        class="size-8 rounded-full bg-[var(--color-brand-purple)]/10 flex items-center justify-center text-[var(--color-brand-purple)] text-xs font-bold shrink-0 overflow-hidden">
+                        class="size-8 rounded-full bg-[var(--color-brand-purple)]/10 flex items-center justify-center text-[var(--color-brand-purple)] text-xs font-bold shrink-0 overflow-hidden hidden sm:flex">
                         @if (auth()->user()->profile_picture_url)
                             <img src="{{ auth()->user()->profile_picture_url }}" class="size-full object-cover">
                         @else
                             {{ auth()->user()->initials() }}
                         @endif
                     </div>
-                    <div class="flex-1 relative">
+                    <div class="flex-1 w-full relative">
                         <!-- Quick Reaction Emojis -->
-                        <div class="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
+                        <div class="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide no-scrollbar">
                             @foreach (['🔥', '❤️', '👍', '😮', '😢', '😡'] as $emoji)
                                 <button wire:click="sendQuickComment('{{ $emoji }}')"
-                                    class="size-10 text-2xl hover:scale-125 transition-transform bg-zinc-50 dark:bg-zinc-800 rounded-full flex items-center justify-center cursor-pointer shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
+                                    class="size-9 sm:size-10 text-xl sm:text-2xl hover:scale-110 transition-transform bg-zinc-50 dark:bg-zinc-800 rounded-full flex items-center justify-center cursor-pointer shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
                                     {{ $emoji }}
                                 </button>
                             @endforeach
                         </div>
 
                         <!-- Comment Textarea Area -->
-                        <div class="relative">
+                        <div class="relative w-full">
                             <textarea wire:model="commentContent" placeholder="{{ __('Write a comment...') }}" rows="1"
                                 class="w-full bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-2xl pl-4 pr-12 py-3 text-sm focus:ring-1 focus:ring-[var(--color-brand-purple)] focus:border-[var(--color-brand-purple)] resize-none min-h-[46px] scrollbar-hide"
                                 wire:keydown.enter.prevent="addComment"></textarea>

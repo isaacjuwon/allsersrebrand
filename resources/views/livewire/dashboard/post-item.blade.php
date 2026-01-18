@@ -2,6 +2,7 @@
 
 use Livewire\Volt\Component;
 use App\Models\Post;
+use App\Models\Conversation;
 
 new class extends Component {
     public Post $post;
@@ -23,7 +24,7 @@ new class extends Component {
         }
 
         // Refresh the post model to update counts and relationships
-        $this->post->refresh()->loadCount(['likes', 'allComments']);
+        $this->post->refresh();
     }
 
     public function toggleBookmark()
@@ -37,7 +38,7 @@ new class extends Component {
             $this->post->bookmarks()->create(['user_id' => $user->id]);
         }
 
-        // Refresh the post model
+        // Refresh the post model to keep counts consistent
         $this->post->refresh();
     }
 
@@ -51,6 +52,28 @@ new class extends Component {
         if ($this->post->repostOf) {
             $this->redirect(route('posts.show', $this->post->repostOf), navigate: true);
         }
+    }
+
+    public function startConversation()
+    {
+        $userId = $this->post->user->id;
+        $authId = auth()->id();
+
+        // Find conversation with both users
+        $conversation = auth()
+            ->user()
+            ->conversations()
+            ->whereHas('users', function ($query) use ($userId) {
+                $query->where('users.id', $userId);
+            })
+            ->first();
+
+        if (!$conversation) {
+            $conversation = Conversation::create();
+            $conversation->users()->attach([$authId, $userId]);
+        }
+
+        return $this->redirect(route('chat', $conversation->id), navigate: true);
     }
 }; ?>
 
@@ -337,11 +360,11 @@ new class extends Component {
                 @endif
             </button>
             @if ($post->user_id !== auth()->id())
-                <a href="{{ route('artisan.profile', $post->user) }}" wire:navigate @click.stop
+                <button wire:click="startConversation" @click.stop
                     class="flex items-center gap-1.5 border border-[var(--color-brand-purple)] text-[var(--color-brand-purple)] px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-[var(--color-brand-purple)] hover:text-white transition-all">
                     <flux:icon name="chat-bubble-left-right" class="size-3.5" />
                     {{ __('Chat') }}
-                </a>
+                </button>
             @endif
         </div>
     </div>

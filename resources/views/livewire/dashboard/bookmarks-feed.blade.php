@@ -180,8 +180,8 @@ new class extends Component {
                         <div class="relative group size-20 rounded-lg overflow-hidden border border-zinc-200 shadow-sm">
                             <img src="{{ $repostImage->temporaryUrl() }}" class="size-full object-cover">
                             <button type="button" wire:click="$set('repostImage', null)"
-                                class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <flux:icon name="x-mark" class="size-3" />
+                                class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                <flux:icon name="x-mark" class="size-4" />
                             </button>
                         </div>
                     @endif
@@ -191,8 +191,8 @@ new class extends Component {
                             class="relative group size-20 rounded-lg overflow-hidden border border-zinc-200 flex items-center justify-center bg-zinc-100 shadow-sm">
                             <flux:icon name="video-camera" class="size-8 text-zinc-400" />
                             <button type="button" wire:click="$set('repostVideo', null)"
-                                class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <flux:icon name="x-mark" class="size-3" />
+                                class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                <flux:icon name="x-mark" class="size-4" />
                             </button>
                         </div>
                     @endif

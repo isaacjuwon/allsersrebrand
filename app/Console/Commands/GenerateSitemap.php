@@ -39,7 +39,7 @@ class GenerateSitemap extends Command
             ->whereNotNull('email_verified_at')
             ->chunk(100, function ($users) use ($sitemap) {
                 foreach ($users as $user) {
-                    $sitemap->add(Url::create(route('artisan.profile', $user->username))
+                    $sitemap->add(Url::create(route('artisan.profile', $user->slug))
                         ->setLastModificationDate($user->updated_at)
                         ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY)
                         ->setPriority(0.8));
@@ -59,7 +59,7 @@ class GenerateSitemap extends Command
             });
 
         // Save sitemap
-        $sitemap->writeToFile('./sitemap.xml');
+        $sitemap->writeToFile('/./sitemap.xml');
 
         $this->info('Sitemap generated successfully!');
     }
