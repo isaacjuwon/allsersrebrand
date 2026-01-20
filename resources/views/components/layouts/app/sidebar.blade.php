@@ -5,6 +5,13 @@
     @include('partials.head')
     @stack('head')
     <style>
+        /* Disable pinch-zooming for a native app feel */
+        html,
+        body {
+            touch-action: pan-x pan-y;
+            overscroll-behavior-y: none;
+        }
+
         /* Hide scrollbar for ALL elements within flux-sidebar and the sidebar itself */
         [flux-sidebar],
         [flux-sidebar] * {
@@ -19,6 +26,20 @@
             height: 0 !important;
         }
     </style>
+    <script>
+        // Strictly prevent pinch-to-zoom on mobile devices
+        document.addEventListener('touchstart', function(event) {
+            if (event.touches.length > 1) {
+                event.preventDefault();
+            }
+        }, {
+            passive: false
+        });
+
+        document.addEventListener('gesturestart', function(event) {
+            event.preventDefault();
+        });
+    </script>
 </head>
 
 <body class="min-h-screen bg-white dark:bg-zinc-800 scroll-m-0 pb-6 lg:pb-0">

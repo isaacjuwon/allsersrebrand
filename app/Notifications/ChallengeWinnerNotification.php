@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Services\OneSignalService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -28,7 +29,26 @@ class ChallengeWinnerNotification extends Notification
      */
     public function via(object $notifiable): array
     {
+        if ($notifiable->onesignal_player_id) {
+            $this->sendPushNotification($notifiable);
+        }
+
         return ['database', 'mail'];
+    }
+
+    protected function sendPushNotification($notifiable)
+    {
+        $oneSignal = app(OneSignalService::class);
+        $oneSignal->sendToUser(
+            $notifiable->onesignal_player_id,
+            "Congratulations! You Won!",
+            "We are thrilled to announce that you have been selected as the winner of: " . $this->challenge->title,
+            route('artisan.profile', $notifiable->username ?? ''),
+            [
+                'type' => 'challenge_winner',
+                'challenge_id' => $this->challenge->id,
+            ]
+        );
     }
 
     /**

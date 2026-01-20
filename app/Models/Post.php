@@ -168,8 +168,17 @@ class Post extends Model
         $escaped = preg_replace_callback($mentionPattern, function ($matches) {
             $whitespace = $matches[1];
             $username = $matches[2];
-            $url = route('artisan.profile', $username);
-            return $whitespace . '<a href="' . $url . '" class="text-[var(--color-brand-purple)] font-bold hover:underline">@' . $username . '</a>';
+
+            // Fetch the user to get their slug
+            $user = \App\Models\User::where('username', $username)->first();
+
+            if ($user) {
+                $url = route('artisan.profile', ['user' => $user->slug]);
+                return $whitespace . '<a href="' . $url . '" class="text-[var(--color-brand-purple)] font-bold hover:underline">@' . $username . '</a>';
+            }
+
+            // Fallback to plain text if user doesn't exist
+            return $whitespace . '@' . $username;
         }, $escaped);
 
         // 3. Convert #hashtags to links - Ensure it's not part of an HTML entity

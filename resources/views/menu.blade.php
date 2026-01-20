@@ -1,9 +1,81 @@
 <x-layouts.app :title="__('Menu')">
-    <div class="p-4 md:p-6 max-w-lg mx-auto space-y-8">
+    <div class="p-4 md:p-6 max-w-lg mx-auto space-y-6 pb-24">
 
-        <div class="flex items-center gap-4">
-            <flux:heading size="xl">{{ __('Menu') }}</flux:heading>
+        <!-- User Profile Header -->
+        <div
+            class="bg-white dark:bg-zinc-900 rounded-[2rem] p-6 shadow-sm border border-zinc-100 dark:border-zinc-800 flex flex-col items-center text-center relative overflow-hidden group">
+            <div
+                class="absolute top-0 right-0 p-12 bg-[var(--color-brand-purple)]/5 rounded-full -mr-16 -mt-16 blur-3xl transition-all group-hover:bg-[var(--color-brand-purple)]/10">
+            </div>
+
+            <div
+                class="size-20 rounded-2xl overflow-hidden border-4 border-white dark:border-zinc-800 shadow-xl relative z-10 bg-zinc-100 dark:bg-zinc-800">
+                @if (auth()->user()->profile_picture_url)
+                    <img src="{{ auth()->user()->profile_picture_url }}" class="size-full object-cover">
+                @else
+                    <div class="size-full flex items-center justify-center text-2xl font-black text-zinc-400">
+                        {{ auth()->user()->initials() }}
+                    </div>
+                @endif
+            </div>
+
+            <div class="mt-4 relative z-10">
+                <h2 class="text-xl font-black text-zinc-900 dark:text-white tracking-tight">{{ auth()->user()->name }}
+                </h2>
+                <p class="text-xs font-bold text-zinc-500 mt-1">{{ auth()->user()->email }}</p>
+
+                @if (auth()->user()->isArtisan())
+                    <div
+                        class="mt-2 flex items-center justify-center gap-1.5 font-bold text-[10px] uppercase tracking-widest text-[var(--color-brand-purple)] bg-[var(--color-brand-purple)]/10 px-3 py-1 rounded-full">
+                        <flux:icon name="check-badge" variant="solid" class="size-3" />
+                        {{ auth()->user()->work ?? __('Verified Artisan') }}
+                    </div>
+                @endif
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 w-full mt-6 relative z-10">
+                <flux:button :href="route('profile.edit')" variant="filled" class="rounded-xl font-bold py-2.5"
+                    wire:navigate>
+                    {{ __('Edit Profile') }}
+                </flux:button>
+
+                @php
+                    $profileUrl = auth()->user()->isArtisan()
+                        ? route('artisan.profile', auth()->user())
+                        : route('user.profile', auth()->user());
+                @endphp
+
+                <flux:button x-data="{
+                    share() {
+                        if (navigator.share) {
+                            navigator.share({
+                                title: '{{ auth()->user()->name }} on Allsers',
+                                text: 'Check out my profile on Allsers!',
+                                url: '{{ $profileUrl }}'
+                            });
+                        } else {
+                            navigator.clipboard.writeText('{{ $profileUrl }}');
+                            $dispatch('toast', { type: 'success', title: 'Link Copied', message: 'Profile link copied to clipboard!' });
+                        }
+                    }
+                }" @click="share()" variant="outline"
+                    class="rounded-xl font-bold py-2.5">
+                    <flux:icon name="share" class="mr-2 size-4" />
+                    {{ __('Share') }}
+                </flux:button>
+            </div>
         </div>
+
+        <flux:separator />
+
+        <!-- Notification Control -->
+        <div class="space-y-3">
+            <flux:heading size="sm" class="text-zinc-500 uppercase tracking-wider text-xs font-medium px-2">
+                {{ __('Connectivity') }}</flux:heading>
+            <livewire:dashboard.notification-toggle />
+        </div>
+
+        <flux:separator />
 
         <flux:navlist>
             <flux:navlist.group :heading="__('Platform')">
@@ -25,8 +97,6 @@
                     {{ __('Notifications') }}</flux:navlist.item>
                 <flux:navlist.item icon="bookmark" :href="route('bookmarks')" wire:navigate>{{ __('Saved') }}
                 </flux:navlist.item>
-                <flux:navlist.item icon="user" :href="route('artisan.profile', auth()->user())" wire:navigate>
-                    {{ __('Profile') }}</flux:navlist.item>
             </flux:navlist.group>
 
             @if (auth()->user()->isAdmin())
@@ -39,11 +109,6 @@
                     </flux:navlist.item>
                 </flux:navlist.group>
             @endif
-
-            <flux:navlist.group :heading="__('Settings')" class="mt-4">
-                <flux:navlist.item icon="cog" :href="route('profile.edit')" wire:navigate>{{ __('Settings') }}
-                </flux:navlist.item>
-            </flux:navlist.group>
         </flux:navlist>
 
         <flux:separator />
@@ -62,14 +127,15 @@
 
         <form method="POST" action="{{ route('logout') }}" class="w-full">
             @csrf
-            <flux:button type="submit" variant="danger" class="w-full" icon="arrow-right-start-on-rectangle">
+            <flux:button type="submit" variant="danger" class="w-full rounded-2xl py-4 font-black"
+                icon="arrow-right-start-on-rectangle">
                 {{ __('Log Out') }}
             </flux:button>
         </form>
 
         <div class="pt-6 text-center">
-            <p class="text-xs text-zinc-400">
-                {{ config('app.name') }} v{{ config('app.version', '1.0.0') }}
+            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                {{ config('app.name') }} &bull; v{{ config('app.version', '4.6') }} &bull; @yield('version', '2026')
             </p>
         </div>
     </div>

@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Services\OneSignalService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -28,7 +29,26 @@ class ChallengeJudgeInvitation extends Notification
      */
     public function via(object $notifiable): array
     {
+        if ($notifiable->onesignal_player_id) {
+            $this->sendPushNotification($notifiable);
+        }
+
         return ['database', 'mail'];
+    }
+
+    protected function sendPushNotification($notifiable)
+    {
+        $oneSignal = app(OneSignalService::class);
+        $oneSignal->sendToUser(
+            $notifiable->onesignal_player_id,
+            "Challenge Invitation!",
+            "You have been invited to judge the " . $this->challenge->title . " challenge.",
+            route('challenges.show', $this->challenge->custom_link),
+            [
+                'type' => 'challenge_invitation',
+                'challenge_id' => $this->challenge->id,
+            ]
+        );
     }
 
     /**
