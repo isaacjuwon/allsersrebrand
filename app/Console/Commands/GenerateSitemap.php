@@ -39,10 +39,16 @@ class GenerateSitemap extends Command
             ->whereNotNull('email_verified_at')
             ->chunk(100, function ($users) use ($sitemap) {
                 foreach ($users as $user) {
-                    $sitemap->add(Url::create(route('artisan.profile', $user->slug))
+                    $profileUrl = Url::create(route('artisan.profile', $user->slug))
                         ->setLastModificationDate($user->updated_at)
                         ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY)
-                        ->setPriority(0.8));
+                        ->setPriority(0.8);
+
+                    if ($user->profile_picture_url) {
+                        $profileUrl->addImage($user->profile_picture_url, $user->name . ' - ' . ($user->work ?? 'Artisan') . ' on Allsers');
+                    }
+
+                    $sitemap->add($profileUrl);
                 }
             });
 

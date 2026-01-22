@@ -103,7 +103,7 @@ new class extends Component {
     <meta property="og:title" content="{{ $user->name }} | {{ $user->work ?? 'Verified Artisan' }} on Allsers">
     <meta property="og:description"
         content="{{ Str::limit($user->bio ?: 'Explore the professional portfolio and verified services of ' . $user->name . ' on Allsers. Hire trusted artisans with confidence.', 160) }}">
-    <meta property="og:image" content="{{ $user->profile_picture_url ?: asset('assets/allsers-social.png') }}">
+    <meta property="og:image" content="{{ $user->profile_picture_url ?: asset('assets/allsers.png') }}">
     <meta property="profile:username" content="{{ $user->username }}">
 
     <!-- Twitter -->
@@ -112,7 +112,76 @@ new class extends Component {
     <meta property="twitter:title" content="{{ $user->name }} | {{ $user->work ?? 'Verified Artisan' }} on Allsers">
     <meta property="twitter:description"
         content="{{ Str::limit($user->bio ?: 'Explore the professional portfolio and verified services of ' . $user->name . ' on Allsers. Hire trusted artisans with confidence.', 160) }}">
-    <meta property="twitter:image" content="{{ $user->profile_picture_url ?: asset('assets/allsers-social.png') }}">
+    <meta property="twitter:image" content="{{ $user->profile_picture_url ?: asset('assets/allsers.png') }}">
+
+    <!-- Structured Data (JSON-LD) for Google Rich Snippets -->
+    <!-- Structured Data (JSON-LD) for Google Rich Snippets -->
+    @php
+        $avgRating = $user->averageRating();
+        $reviewCount = $user->reviews()->count();
+        $latestReviews = $user->reviews()->with('user')->latest()->limit(3)->get();
+
+        $jsonLd = [
+            '@context' => 'https://schema.org',
+            '@type' => 'ProfessionalService',
+            'name' => $user->name,
+            'image' => $user->profile_picture_url ?: asset('assets/allsers.png'),
+            '@id' => route('artisan.profile', ['user' => $user->slug]),
+            'url' => route('artisan.profile', ['user' => $user->slug]),
+            'description' => Str::limit(
+                $user->bio ?:
+                'Verified ' .
+                    ($user->work ?? 'Artisan') .
+                    ' on Allsers platform. Hire top-rated professionals for your needs.',
+                160,
+            ),
+            'address' => [
+                '@type' => 'PostalAddress',
+                'streetAddress' => $user->address ?? 'Lagos, Nigeria',
+                'addressCountry' => 'NG',
+            ],
+            'priceRange' => "$$",
+            'provider' => [
+                '@type' => 'Person',
+                'name' => $user->name,
+                'jobTitle' => $user->work ?? 'Artisan',
+                'image' => $user->profile_picture_url ?: asset('assets/allsers.png'),
+            ],
+        ];
+
+        if ($reviewCount > 0) {
+            $jsonLd['aggregateRating'] = [
+                '@type' => 'AggregateRating',
+                'ratingValue' => number_format($avgRating, 1),
+                'reviewCount' => (string) $reviewCount,
+                'bestRating' => '5',
+                'worstRating' => '1',
+            ];
+
+            $jsonLd['review'] = $latestReviews
+                ->map(function ($review) {
+                    return [
+                        '@type' => 'Review',
+                        'author' => [
+                            '@type' => 'Person',
+                            'name' => $review->user->name,
+                        ],
+                        'datePublished' => $review->created_at->toIso8601String(),
+                        'reviewBody' => Str::limit($review->comment, 150),
+                        'reviewRating' => [
+                            '@type' => 'Rating',
+                            'ratingValue' => (string) $review->rating,
+                            'bestRating' => '5',
+                            'worstRating' => '1',
+                        ],
+                    ];
+                })
+                ->toArray();
+        }
+    @endphp
+    <script type="application/ld+json">
+    {!! json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}
+    </script>
 @endpush
 
 <div class="max-w-4xl mx-auto px-4 py-8" x-data="{
@@ -205,7 +274,8 @@ new class extends Component {
             @if ($user->badges->count() > 0)
                 <div class="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800">
                     <h3 class="text-[10px] uppercase font-bold tracking-widest text-zinc-400 mb-4">
-                        {{ __('Special Badges & Awards') }}</h3>
+                        {{ __('Special Badges & Awards') }}
+                    </h3>
                     <div class="flex flex-wrap gap-4">
                         @foreach ($user->badges as $badge)
                             <div class="group relative flex flex-col items-center gap-2">
@@ -227,7 +297,8 @@ new class extends Component {
                                     <p class="font-bold">{{ $badge->name }}</p>
                                     <p class="text-zinc-400 mt-1">{{ $badge->description }}</p>
                                     <p class="text-[8px] mt-2 text-yellow-400">{{ __('Awarded') }}:
-                                        {{ \Carbon\Carbon::parse($badge->pivot->awarded_at)->format('M Y') }}</p>
+                                        {{ \Carbon\Carbon::parse($badge->pivot->awarded_at)->format('M Y') }}
+                                    </p>
                                     <div
                                         class="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-zinc-900">
                                     </div>
