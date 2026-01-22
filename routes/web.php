@@ -119,12 +119,12 @@ Route::get('/clear-all-cache', function () {
 //     return 'Storage Linked successfully.';
 // });
 
-Route::get('/generate-sitemap', function () {
-    Artisan::call('sitemap:generate');
-    return 'Sitemap generated successfully.';
-});
+// Route::get('/generate-sitemap', function () {
+//     Artisan::call('sitemap:generate');
+//     return 'Sitemap generated successfully.';
+// });
 
-Route::get('/generate-user-slugs', function () {
-    Artisan::call('users:generate-slugs');
-    return 'User slugs generated successfully.';
-});
+// Route::get('/generate-user-slugs', function () {
+//     Artisan::call('users:generate-slugs');
+//     return 'User slugs generated successfully.';
+// });
