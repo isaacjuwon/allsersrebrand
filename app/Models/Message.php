@@ -10,20 +10,29 @@ class Message extends Model
     protected $fillable = [
         'conversation_id',
         'user_id',
+        'type',
+        'engagement_id',
         'content',
         'image_path',
         'document_path',
         'document_name',
+        'metadata',
         'read_at',
     ];
 
     protected $casts = [
         'read_at' => 'datetime',
+        'metadata' => 'array',
     ];
 
     public function conversation(): BelongsTo
     {
         return $this->belongsTo(Conversation::class);
+    }
+
+    public function engagement(): BelongsTo
+    {
+        return $this->belongsTo(Engagement::class);
     }
 
     public function user(): BelongsTo

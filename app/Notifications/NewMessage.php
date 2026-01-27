@@ -32,11 +32,18 @@ class NewMessage extends Notification
     {
         $oneSignal = app(OneSignalService::class);
         $senderName = $this->message->user->name;
-        $content = $this->message->content ? substr($this->message->content, 0, 100) : "You have a new message";
+
+        $content = match ($this->message->type) {
+            'inquiry' => "sent you a new job inquiry",
+            'quote' => "sent you a professional quote",
+            'handshake' => "confirmed the deal! Job started.",
+            'completion' => "marked the job as completed!",
+            default => $this->message->content ? substr($this->message->content, 0, 100) : "sent you a new message",
+        };
 
         $oneSignal->sendToUser(
             $notifiable->onesignal_player_id,
-            "New Message from $senderName",
+            "Allsers: $senderName",
             $content,
             route('chat', $this->message->conversation_id),
             [
@@ -49,13 +56,21 @@ class NewMessage extends Notification
 
     public function toArray(object $notifiable): array
     {
+        $text = match ($this->message->type) {
+            'inquiry' => "sent you a new job inquiry",
+            'quote' => "sent you a professional quote",
+            'handshake' => "confirmed the deal! Job started.",
+            'completion' => "marked the job as completed!",
+            default => 'sent you a new message: ' . substr($this->message->content, 0, 50) . '...',
+        };
+
         return [
             'message_id' => $this->message->id,
             'sender_id' => $this->message->user_id,
             'sender_name' => $this->message->user->name,
             'content' => $this->message->content,
             'conversation_id' => $this->message->conversation_id,
-            'message' => 'sent you a new message: ' . substr($this->message->content, 0, 50) . '...',
+            'message' => $text,
             'type' => 'message',
         ];
     }

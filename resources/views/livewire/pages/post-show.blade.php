@@ -190,7 +190,7 @@ new class extends Component {
 
         $image = null;
         if ($this->post->images) {
-            $imageArray = array_filter(explode(',', $this->post->images));
+            $imageArray = is_array($this->post->images) ? $this->post->images : array_filter(explode(',', (string) $this->post->images));
             if (count($imageArray) > 0) {
                 $image = route('images.show', ['path' => trim($imageArray[0])]);
             }
@@ -317,7 +317,7 @@ new class extends Component {
 
                 <!-- Images -->
                 @if ($post->images)
-                    @php $imageArray = array_filter(explode(',', $post->images)); @endphp
+                    @php $imageArray = is_array($post->images) ? $post->images : array_filter(explode(',', (string)$post->images)); @endphp
                     @if (count($imageArray) > 0)
                         <div class="space-y-2">
                             @foreach ($imageArray as $image)
@@ -333,8 +333,9 @@ new class extends Component {
                 <!-- Video -->
                 @if ($post->video)
                     <div class="rounded-xl overflow-hidden h-80 border border-zinc-100 dark:border-zinc-800">
-                        <video src="{{ route('videos.show', ['path' => $post->video]) }}" class="w-full h-full object-cover"
-                            controls controlsList="nodownload" playsinline preload="metadata"></video>
+                        <video src="{{ route('videos.show', ['path' => $post->video]) }}"
+                            class="w-full h-full object-cover" controls controlsList="nodownload" playsinline
+                            preload="metadata"></video>
                     </div>
                 @endif
 
@@ -381,7 +382,7 @@ new class extends Component {
                                 {!! $post->repostOf->formatted_content !!}
                             </p>
                             @if ($post->repostOf->images)
-                                @php $originImages = array_filter(explode(',', $post->repostOf->images)); @endphp
+                                @php $originImages = is_array($post->repostOf->images) ? $post->repostOf->images : array_filter(explode(',', (string)$post->repostOf->images)); @endphp
                                 @if (count($originImages) > 0)
                                     <div class="h-32 rounded-lg overflow-hidden border border-zinc-200/50">
                                         <img src="{{ route('images.show', ['path' => trim($originImages[0])]) }}"
@@ -392,8 +393,8 @@ new class extends Component {
                                 <div
                                     class="h-32 rounded-lg overflow-hidden bg-black flex items-center justify-center border border-zinc-200/50">
                                     <video src="{{ route('videos.show', ['path' => $post->repostOf->video]) }}"
-                                        class="w-full h-full object-cover" controls controlsList="nodownload" playsinline
-                                        preload="metadata"></video>
+                                        class="w-full h-full object-cover" controls controlsList="nodownload"
+                                        playsinline preload="metadata"></video>
                                 </div>
                             @endif
                         </a>
@@ -439,7 +440,8 @@ new class extends Component {
                                     });
                                 }
                             }
-                        }" @click="share()" class="flex items-center gap-1.5 transition-colors relative"
+                        }" @click="share()"
+                            class="flex items-center gap-1.5 transition-colors relative"
                             :class="copied ? 'text-green-500' : 'text-zinc-500 hover:text-green-500'">
                             <flux:icon name="share" class="size-5" />
                             <span x-show="copied" x-transition
@@ -469,7 +471,8 @@ new class extends Component {
                             <div
                                 class="size-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 font-bold text-xs shrink-0 overflow-hidden">
                                 @if ($comment->user->profile_picture_url)
-                                    <img src="{{ $comment->user->profile_picture_url }}" class="size-full object-cover">
+                                    <img src="{{ $comment->user->profile_picture_url }}"
+                                        class="size-full object-cover">
                                 @else
                                     {{ $comment->user->initials() }}
                                 @endif
@@ -552,7 +555,8 @@ new class extends Component {
             class="mt-4 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky bottom-4 shadow-lg">
             @auth
                 @if ($replyToId)
-                    <div class="flex items-center justify-between mb-2 px-2 py-1 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <div
+                        class="flex items-center justify-between mb-2 px-2 py-1 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                         <span class="text-[10px] text-purple-700 dark:text-purple-300">
                             {{ __('Replying to') }} <span class="font-bold">{{ $replyToName }}</span>
                         </span>

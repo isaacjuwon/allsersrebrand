@@ -105,7 +105,7 @@ new class extends Component {
 
         <!-- Media Display (Up to 4 images or 1 video) -->
         @if ($post->images)
-            @php $imgs = explode(',', $post->images); @endphp
+            @php $imgs = is_array($post->images) ? $post->images : array_filter(explode(',', (string)$post->images)); @endphp
             <div
                 class="grid {{ count($imgs) > 1 ? 'grid-cols-2' : 'grid-cols-1' }} gap-2 rounded-2xl overflow-hidden mb-6">
                 @foreach ($imgs as $img)

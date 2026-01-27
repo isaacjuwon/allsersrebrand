@@ -234,6 +234,11 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Get profile completion statistics for artisans.
      */
+    public function artisanEngagements()
+    {
+        return $this->hasMany(Engagement::class, 'artisan_id');
+    }
+
     public function profileCompletion(): array
     {
         $fields = [

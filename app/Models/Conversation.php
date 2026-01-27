@@ -30,6 +30,16 @@ class Conversation extends Model
         return $this->hasOne(Message::class)->latestOfMany();
     }
 
+    public function engagements(): HasMany
+    {
+        return $this->hasMany(Engagement::class);
+    }
+
+    public function activeEngagement(): HasOne
+    {
+        return $this->hasOne(Engagement::class)->whereNotIn('status', ['completed', 'cancelled']);
+    }
+
     public function getOtherUserAttribute()
     {
         return $this->users->where('id', '!=', auth()->id())->first();

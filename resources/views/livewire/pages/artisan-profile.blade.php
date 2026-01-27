@@ -15,6 +15,7 @@ new class extends Component {
     use WithFileUploads, HandlesPostActions;
     public User $user;
     public $posts = [];
+    public $showcases = [];
 
     public function rendering($view)
     {
@@ -36,6 +37,17 @@ new class extends Component {
     {
         $this->user = $user;
         $this->loadPosts();
+        $this->loadShowcases();
+    }
+
+    public function loadShowcases()
+    {
+        $this->showcases = $this->user
+            ->artisanEngagements()
+            ->where('is_public', true)
+            ->with(['review.reviewer', 'user'])
+            ->latest()
+            ->get();
     }
 
     public function loadPosts()
@@ -119,7 +131,7 @@ new class extends Component {
     @php
         $avgRating = $user->averageRating();
         $reviewCount = $user->reviews()->count();
-        $latestReviews = $user->reviews()->with('user')->latest()->limit(3)->get();
+        $latestReviews = $user->reviews()->with('reviewer')->latest()->limit(3)->get();
 
         $jsonLd = [
             '@context' => 'https://schema.org',
@@ -164,7 +176,7 @@ new class extends Component {
                         '@type' => 'Review',
                         'author' => [
                             '@type' => 'Person',
-                            'name' => $review->user->name,
+                            'name' => $review->reviewer ? $review->reviewer->name : 'Allsers User',
                         ],
                         'datePublished' => $review->created_at->toIso8601String(),
                         'reviewBody' => Str::limit($review->comment, 150),
@@ -315,6 +327,106 @@ new class extends Component {
     <div class="mb-8">
         <livewire:artisan.rating-widget :artisan="$user" />
     </div>
+
+    <!-- Verified Job History Showcases -->
+    @if (count($showcases) > 0)
+        <div class="mb-12">
+            <div class="flex items-center justify-between px-2 mb-6">
+                <h2 class="text-xl font-black text-zinc-900 dark:text-white flex items-center gap-2">
+                    <flux:icon name="check-badge" variant="solid" class="size-6 text-purple-600" />
+                    {{ __('Verified Success Stories') }}
+                </h2>
+                <span
+                    class="text-[10px] font-black uppercase text-zinc-400 tracking-widest bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full">
+                    {{ count($showcases) }} {{ __('Jobs Completed') }}
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                @foreach ($showcases as $showcase)
+                    <div
+                        class="group bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500">
+                        {{-- Visual Comparison --}}
+                        <div class="relative aspect-[16/10] overflow-hidden bg-zinc-100 dark:bg-zinc-800"
+                            x-data="{ view: 'after' }">
+                            @if (isset($showcase->showcase_photos['before']) && isset($showcase->showcase_photos['after']))
+                                <div class="absolute inset-0 transition-opacity duration-500"
+                                    :class="view === 'before' ? 'opacity-100' : 'opacity-0'">
+                                    <img src="{{ \App\Models\Setting::asset($showcase->showcase_photos['before']) }}"
+                                        class="size-full object-cover">
+                                </div>
+                                <div class="absolute inset-0 transition-opacity duration-500"
+                                    :class="view === 'after' ? 'opacity-100' : 'opacity-0'">
+                                    <img src="{{ \App\Models\Setting::asset($showcase->showcase_photos['after']) }}"
+                                        class="size-full object-cover">
+                                </div>
+
+                                {{-- Interaction Controls --}}
+                                <div
+                                    class="absolute bottom-4 left-1/2 -translate-x-1/2 flex bg-black/40 backdrop-blur-md rounded-full p-1 border border-white/20 z-10">
+                                    <button @click="view = 'before'"
+                                        :class="view === 'before' ? 'bg-white text-zinc-900' : 'text-white'"
+                                        class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase transition-all">Before</button>
+                                    <button @click="view = 'after'"
+                                        :class="view === 'after' ? 'bg-white text-zinc-900' : 'text-white'"
+                                        class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase transition-all">After</button>
+                                </div>
+                            @elseif(isset($showcase->showcase_photos['after']))
+                                <img src="{{ \App\Models\Setting::asset($showcase->showcase_photos['after']) }}"
+                                    class="size-full object-cover">
+                            @endif
+
+                            {{-- Verified Badge --}}
+                            <div
+                                class="absolute top-4 right-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-lg flex items-center gap-2">
+                                <flux:icon name="shield-check" variant="solid" class="size-4 text-green-500" />
+                                <span
+                                    class="text-[9px] font-black uppercase tracking-widest text-zinc-900 dark:text-white">Verified
+                                    Hire</span>
+                            </div>
+                        </div>
+
+                        {{-- Details --}}
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-1">
+                                    @for ($i = 1; $i <= 5; $i++)
+                                        <flux:icon name="star" variant="solid"
+                                            class="size-3 {{ $i <= ($showcase->review?->rating ?? 5) ? 'text-yellow-400' : 'text-zinc-200' }}" />
+                                    @endfor
+                                    <span
+                                        class="text-xs font-black ml-1">{{ number_format($showcase->review?->rating ?? 5, 1) }}</span>
+                                </div>
+                                <span
+                                    class="text-[10px] font-bold text-zinc-400 uppercase">{{ $showcase->completed_at?->diffForHumans() }}</span>
+                            </div>
+
+                            <p
+                                class="text-sm font-bold text-zinc-900 dark:text-white mb-4 line-clamp-3 leading-relaxed italic">
+                                "{{ $showcase->showcase_description }}"
+                            </p>
+
+                            @if ($showcase->review)
+                                <div
+                                    class="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800 flex items-center gap-3">
+                                    <div class="size-8 rounded-full overflow-hidden bg-zinc-100">
+                                        <img src="{{ $showcase->user->profile_picture_url }}"
+                                            class="size-full object-cover">
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-black text-zinc-900 dark:text-white">
+                                            {{ $showcase->user->name }}</p>
+                                        <p class="text-[9px] text-zinc-400 font-medium">{{ __('Verified Customer') }}
+                                        </p>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     <!-- Portfolio Section -->
     <div class="space-y-6 max-w-2xl">

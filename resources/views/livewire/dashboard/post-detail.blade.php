@@ -272,7 +272,7 @@ new class extends Component {
 
                         <!-- Images -->
                         @if ($post->images)
-                            @php $imageArray = array_filter(explode(',', $post->images)); @endphp
+                            @php $imageArray = is_array($post->images) ? $post->images : array_filter(explode(',', (string)$post->images)); @endphp
                             @if (count($imageArray) > 0)
                                 <div class="space-y-2">
                                     @foreach ($imageArray as $image)
@@ -337,7 +337,7 @@ new class extends Component {
                                     class="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 mb-2 whitespace-pre-wrap">
                                     {!! $post->repostOf->formatted_content !!}</p>
                                 @if ($post->repostOf->images)
-                                    @php $originImages = array_filter(explode(',', $post->repostOf->images)); @endphp
+                                    @php $originImages = is_array($post->repostOf->images) ? $post->repostOf->images : array_filter(explode(',', (string)$post->repostOf->images)); @endphp
                                     @if (count($originImages) > 0)
                                         <div class="h-32 rounded-lg overflow-hidden border border-zinc-200/50">
                                             <img src="{{ route('images.show', ['path' => trim($originImages[0])]) }}"

@@ -9,10 +9,16 @@ class Review extends Model
     protected $fillable = [
         'reviewer_id',
         'artisan_id',
+        'engagement_id',
         'rating',
         'comment',
         'ip_address',
     ];
+
+    public function engagement()
+    {
+        return $this->belongsTo(Engagement::class);
+    }
 
     public function reviewer()
     {

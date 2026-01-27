@@ -16,8 +16,14 @@ use App\Notifications\ServiceInquiry;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Volt\Component;
 use Livewire\Attributes\On;
+use Livewire\WithFileUploads;
+use App\Models\Conversation;
+use App\Models\Message;
+use App\Models\Engagement;
 
 new class extends Component {
+    use WithFileUploads;
+
     public $isOpen = false;
     public $messages = [];
     public $input = '';
@@ -31,6 +37,98 @@ new class extends Component {
     public $sentPings = [];
     public $pingingId = null;
     public $fullPage = false;
+
+    // Structured Inquiry Properties
+    public $selectedArtisanRecord = null;
+    public $showInquiryForm = false;
+    public $inquiryTask = '';
+    public $inquiryLocation = '';
+    public $inquiryUrgency = 'medium';
+    public $inquiryPhotos = [];
+
+    public function startInquiry($artisanId)
+    {
+        if (!auth()->check()) {
+            return $this->redirect(route('login'));
+        }
+        $this->selectedArtisanRecord = User::find($artisanId);
+        $this->inquiryLocation = $this->address;
+        $this->showInquiryForm = true;
+    }
+
+    public function submitStructuredInquiry()
+    {
+        if (!$this->selectedArtisanRecord) {
+            return;
+        }
+
+        $this->validate([
+            'inquiryTask' => 'required|min:10',
+            'inquiryLocation' => 'required',
+            'inquiryUrgency' => 'required|in:low,medium,high',
+            'inquiryPhotos.*' => 'image|max:5120', // 5MB Max
+        ]);
+
+        $sender = auth()->user();
+        $artisan = $this->selectedArtisanRecord;
+
+        // 1. Handle Photos
+        $photoPaths = [];
+        if ($this->inquiryPhotos) {
+            foreach ($this->inquiryPhotos as $photo) {
+                $photoPaths[] = $photo->store('inquiries/photos', 'cloudinary');
+            }
+        }
+
+        // 2. Find or Create Conversation
+        $conversation = Conversation::whereHas('users', function ($q) use ($sender) {
+            $q->where('users.id', $sender->id);
+        })
+            ->whereHas('users', function ($q) use ($artisan) {
+                $q->where('users.id', $artisan->id);
+            })
+            ->first();
+
+        if (!$conversation) {
+            $conversation = Conversation::create(['last_message_at' => now()]);
+            $conversation->users()->attach([$sender->id, $artisan->id]);
+        }
+
+        // 3. Create Engagement
+        $engagement = Engagement::create([
+            'user_id' => $sender->id,
+            'artisan_id' => $artisan->id,
+            'conversation_id' => $conversation->id,
+            'status' => 'pending',
+            'title' => $this->inquiryTask,
+            'location_context' => $this->inquiryLocation,
+            'urgency_level' => $this->inquiryUrgency,
+            'inquiry_photos' => $photoPaths,
+        ]);
+
+        // 4. Create Inquiry Message
+        $message = Message::create([
+            'conversation_id' => $conversation->id,
+            'user_id' => $sender->id,
+            'type' => 'inquiry',
+            'engagement_id' => $engagement->id,
+            'content' => $this->inquiryTask,
+        ]);
+
+        $conversation->update(['last_message_at' => now()]);
+
+        // 5. Notify
+        try {
+            Mail::to($artisan->email)->send(new ServiceInquiryMail($sender, $artisan));
+            $artisan->notify(new ServiceInquiry($sender));
+        } catch (\Exception $e) {
+            $artisan->notify(new ServiceInquiry($sender));
+        }
+
+        $this->dispatch('toast', type: 'success', title: 'Inquiry Sent!', message: 'Taking you to your conversation with ' . $artisan->name);
+
+        return $this->redirect(route('chat', $conversation->id), navigate: true);
+    }
 
     public function mount()
     {
@@ -133,39 +231,7 @@ new class extends Component {
 
     public function pingArtisan($userId)
     {
-        if (!auth()->check()) {
-            return $this->redirect(route('login'));
-        }
-
-        if (in_array($userId, $this->sentPings)) {
-            return;
-        }
-
-        $artisan = User::find($userId);
-        if (!$artisan) {
-            return;
-        }
-
-        $this->pingingId = $userId;
-        $sender = auth()->user();
-
-        try {
-            Mail::to($artisan->email)->send(new ServiceInquiryMail($sender, $artisan));
-            $artisan->notify(new ServiceInquiry($sender));
-            $this->sentPings[] = $userId;
-            $this->dispatch('toast', type: 'success', title: 'Ping Sent!', message: 'Your inquiry has been sent to ' . $artisan->name);
-        } catch (\Exception $e) {
-            // Log the error if needed: Log::error($e->getMessage());
-            // We still mark it as "sent" in the UI to prevent spamming, or we can let them retry.
-            // But usually, if the mail server is down, we should tell them something went wrong.
-            $this->dispatch('toast', type: 'info', title: 'Connection Alert', message: "We're having trouble reaching the mail server, but we've logged your interest in " . $artisan->name . ". They'll see it in their notifications! 🌸");
-
-            // Still notify inside the app even if mail fails
-            $artisan->notify(new ServiceInquiry($sender));
-            $this->sentPings[] = $userId;
-        } finally {
-            $this->pingingId = null;
-        }
+        $this->startInquiry($userId);
     }
 
     #[On('generate-ai-response')]
@@ -959,4 +1025,71 @@ new class extends Component {
             <flux:icon name="x-mark" class="size-3" />
         </button>
     </div>
+    <!-- Structured Inquiry Modal -->
+    <flux:modal wire:model="showInquiryForm" variant="flyout" class="space-y-6">
+        <div class="space-y-6 text-left">
+            <div>
+                <h2 class="text-xl font-black text-zinc-900 dark:text-white">{{ __('Start a Quick Brief') }}</h2>
+                <p class="text-xs text-zinc-500 mt-1">{{ __('Describe your task clearly to get the best quote.') }}
+                </p>
+            </div>
+
+            <form wire:submit="submitStructuredInquiry" class="space-y-6">
+                {{-- Task Description --}}
+                <flux:textarea wire:model="inquiryTask" label="What do you need done?"
+                    placeholder="e.g. Broken kitchen pipe needs urgent fixing. It's leaking since morning..."
+                    rows="3" />
+
+                {{-- Location Context --}}
+                <flux:input wire:model="inquiryLocation" label="Location Context"
+                    placeholder="e.g. Floor 2, Building B" icon="map-pin" />
+
+                {{-- Urgency Level --}}
+                <flux:radio.group wire:model="inquiryUrgency" label="Urgency Level" variant="segmented">
+                    <flux:radio value="low" label="Low" />
+                    <flux:radio value="medium" label="Medium" />
+                    <flux:radio value="high" label="High (Urgent)" />
+                </flux:radio.group>
+
+                {{-- Photos --}}
+                <div class="space-y-2">
+                    <flux:label>{{ __('Photos of the Problem (Optional)') }}</flux:label>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach ($inquiryPhotos as $index => $photo)
+                            <div class="relative size-16 rounded-xl overflow-hidden border border-zinc-200 shadow-sm">
+                                <img src="{{ $photo->temporaryUrl() }}" class="size-full object-cover">
+                                <button type="button" @click="$wire.set('inquiryPhotos.{{ $index }}', null)"
+                                    class="absolute top-1 right-1 size-5 bg-black/60 rounded-full flex items-center justify-center text-white">
+                                    <flux:icon name="x-mark" class="size-3" />
+                                </button>
+                            </div>
+                        @endforeach
+
+                        <label
+                            class="size-16 rounded-xl border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 transition-colors">
+                            <flux:icon name="plus" class="size-5 text-zinc-400" />
+                            <span class="text-[8px] font-bold text-zinc-400 mt-1">Add Photo</span>
+                            <input type="file" wire:model="inquiryPhotos" multiple class="hidden"
+                                accept="image/*">
+                        </label>
+                    </div>
+                    <div wire:loading wire:target="inquiryPhotos" class="text-[10px] text-purple-600 font-bold">
+                        {{ __('Uploading...') }}
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-zinc-100 dark:border-zinc-800 flex gap-3">
+                    <flux:button type="submit" variant="primary" class="flex-1 rounded-xl py-3"
+                        wire:loading.attr="disabled">
+                        <span wire:loading.remove wire:target="submitStructuredInquiry">
+                            {{ __('Send Brief to') }} {{ $selectedArtisanRecord?->name }}
+                        </span>
+                        <span wire:loading wire:target="submitStructuredInquiry">
+                            {{ __('Sending Inquiry...') }}
+                        </span>
+                    </flux:button>
+                </div>
+            </form>
+        </div>
+    </flux:modal>
 </div>
