@@ -240,11 +240,11 @@ new #[Layout('components.layouts.app')] #[Title('Artisan Finder')] class extends
                 maxZoom: 19,
             }).addTo(this.map);
     
-            const userIcon = L.divIcon({
-                className: 'custom-div-icon',
-                html: `<div class='size-4 bg-blue-500 border-2 border-white rounded-full shadow-lg'></div>`,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
+            const userIcon = L.icon({
+                iconUrl: '{{ asset('assets/map_pointer_blue.svg') }}',
+                iconSize: [32, 42],
+                iconAnchor: [16, 42],
+                popupAnchor: [0, -42]
             });
     
             this.userMarker = L.marker([this.userLat, this.userLng], { icon: userIcon })
@@ -273,11 +273,11 @@ new #[Layout('components.layouts.app')] #[Title('Artisan Finder')] class extends
                 this.artisanMarkers.forEach(m => this.map.removeLayer(m));
                 this.artisanMarkers = [];
     
-                const purpleIcon = L.divIcon({
-                    className: 'custom-div-icon',
-                    html: `<div class='size-4 bg-purple-600 border-2 border-white rounded-full shadow-lg'></div>`,
-                    iconSize: [16, 16],
-                    iconAnchor: [8, 8]
+                const purpleIcon = L.icon({
+                    iconUrl: '{{ asset('assets/map_pointer_purple.svg') }}',
+                    iconSize: [32, 42],
+                    iconAnchor: [16, 42],
+                    popupAnchor: [0, -42]
                 });
     
                 const marker = L.marker([aLat, aLng], { icon: purpleIcon })
@@ -702,29 +702,37 @@ new #[Layout('components.layouts.app')] #[Title('Artisan Finder')] class extends
                 </flux:radio.group>
 
                 {{-- Photos --}}
-                <div class="space-y-2">
+                <div class="space-y-3">
                     <flux:label>{{ __('Photos of the Problem (Optional)') }}</flux:label>
-                    <div class="flex flex-wrap gap-2">
+                    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                         @foreach ($inquiryPhotos as $index => $photo)
-                            <div class="relative size-16 rounded-xl overflow-hidden border border-zinc-200 shadow-sm">
+                            <div
+                                class="relative aspect-square rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700 shadow-sm transition-all hover:scale-105">
                                 <img src="{{ $photo->temporaryUrl() }}" class="size-full object-cover">
                                 <button type="button" @click="$wire.set('inquiryPhotos.{{ $index }}', null)"
-                                    class="absolute top-1 right-1 size-5 bg-black/60 rounded-full flex items-center justify-center text-white">
-                                    <flux:icon name="x-mark" class="size-3" />
+                                    class="absolute top-1.5 right-1.5 size-6 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center text-white ring-2 ring-white/20 transition-transform active:scale-90">
+                                    <flux:icon name="x-mark" class="size-3.5" />
                                 </button>
                             </div>
                         @endforeach
 
                         <label
-                            class="size-16 rounded-xl border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 transition-colors">
-                            <flux:icon name="plus" class="size-5 text-zinc-400" />
-                            <span class="text-[8px] font-bold text-zinc-400 mt-1">Add Photo</span>
+                            class="aspect-square rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-all active:scale-95 group">
+                            <div
+                                class="bg-zinc-100 dark:bg-zinc-800 p-2 rounded-xl group-hover:bg-purple-100 dark:group-hover:bg-purple-900/30 transition-colors">
+                                <flux:icon name="plus" class="size-5 text-zinc-500 group-hover:text-purple-600" />
+                            </div>
+                            <span
+                                class="text-[9px] font-black uppercase text-zinc-400 dark:text-zinc-500 mt-2 tracking-widest group-hover:text-purple-600">{{ __('Photo') }}</span>
                             <input type="file" wire:model="inquiryPhotos" multiple class="hidden"
                                 accept="image/*">
                         </label>
                     </div>
-                    <div wire:loading wire:target="inquiryPhotos" class="text-[10px] text-purple-600 font-bold">
-                        {{ __('Uploading...') }}
+                    <div wire:loading wire:target="inquiryPhotos" class="flex items-center gap-2 mt-2">
+                        <div class="size-3 border-2 border-purple-500 border-t-transparent rounded-full animate-spin">
+                        </div>
+                        <span
+                            class="text-[10px] text-purple-600 font-black uppercase tracking-widest">{{ __('Processing Media...') }}</span>
                     </div>
                 </div>
 

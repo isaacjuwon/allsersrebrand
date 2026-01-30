@@ -254,7 +254,7 @@ new class extends Component {
         if ($this->showcaseToFeed) {
             Post::create([
                 'user_id' => auth()->id(),
-                'content' => "⭐ VERIFIED SUCCESS: " . $this->showcaseDescription,
+                'content' => '⭐ VERIFIED SUCCESS: ' . $this->showcaseDescription,
                 'images' => implode(',', $feedPhotos), // Store as comma-separated string for public posts
             ]);
         }
@@ -344,6 +344,18 @@ new class extends Component {
         ]);
     }
 
+    public function deleteMessage($id)
+    {
+        $message = Message::where('conversation_id', $this->activeConversation->id)->where('id', $id)->first();
+
+        if ($message) {
+            $message->delete();
+            $this->loadMessages();
+            $this->loadConversations();
+            $this->dispatch('toast', type: 'info', title: 'Removed', message: 'Chat content deleted.');
+        }
+    }
+
     public function rendering($view)
     {
         $view->title(__('Chat'));
@@ -360,7 +372,17 @@ new class extends Component {
     rating: 0,
     reviewComment: '',
     showPrompt: true,
-}" x-init="setTimeout(() => showPrompt = false, 8000)"
+    isOnline: navigator.onLine,
+    checkConnectionAndSend() {
+        if (!navigator.onLine) {
+            this.$dispatch('toast', { type: 'error', title: 'Offline!', message: 'Please check your internet connection and try again.' });
+            return;
+        }
+        $wire.sendMessage();
+    }
+}" x-init="setTimeout(() => showPrompt = false, 8000);
+window.addEventListener('online', () => isOnline = true);
+window.addEventListener('offline', () => isOnline = false);"
     class="h-[calc(100dvh-4rem)] md:h-[calc(100vh-4rem)] flex overflow-hidden bg-white dark:bg-zinc-900 border-x-0 border-t-0 md:border border-zinc-200 dark:border-zinc-800 md:rounded-3xl shadow-sm md:mb-4 relative rounded-lg">
     <!-- Conversation List -->
     <div class="w-full md:w-80 border-e border-zinc-200 dark:border-zinc-800 flex flex-col transition-all duration-300"
@@ -439,7 +461,7 @@ new class extends Component {
                             {{ $otherUser ? $otherUser->name : __('Deleted User') }}
                         </h3>
                         @if ($otherUser)
-                            <p class="text-[10px] text-green-500 font-medium">{{ __('Online') }}</p>
+                            {{-- <p class="text-[10px] text-green-500 font-medium">{{ __('Online') }}</p> --}}
                         @endif
                     </div>
                 </div>
@@ -453,21 +475,23 @@ new class extends Component {
             </div>
 
             <!-- Messages Area -->
-            <div id="message-container" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 min-h-0" x-data="{
-                                                scrollToBottom() {
-                                                    this.$el.scrollTo({ top: this.$el.scrollHeight, behavior: 'smooth' });
-                                                }
-                                            }" x-init="scrollToBottom()" @message-sent.window="scrollToBottom()">
+            <div id="message-container" class="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 min-h-0"
+                x-data="{
+                    deletingId: null,
+                    scrollToBottom() {
+                        this.$el.scrollTo({ top: this.$el.scrollHeight, behavior: 'smooth' });
+                    }
+                }" x-init="scrollToBottom()" @message-sent.window="scrollToBottom()">
                 @foreach ($messages as $msg)
                     @php $isMine = $msg->user_id === auth()->id(); @endphp
 
                     @if ($msg->type !== 'text')
                         {{-- Engagement Cards --}}
-                        <div class="flex justify-center w-full py-2">
-                            <div class="w-full max-w-sm">
+                        <div class="flex justify-center w-full py-2 px-2 sm:px-0 select-none">
+                            <div class="w-full max-w-[280px] xs:max-w-[320px] sm:max-w-sm transition-all duration-300">
                                 @if ($msg->type === 'inquiry')
                                     <div
-                                        class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden group">
+                                        class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl sm:rounded-[2.5rem] p-4 sm:p-6 shadow-2xl relative overflow-hidden group">
                                         {{-- Urgency Badge --}}
                                         <div class="absolute top-4 right-4 focus:outline-none">
                                             @php
@@ -483,17 +507,18 @@ new class extends Component {
                                             </span>
                                         </div>
 
-                                        <div class="flex items-center gap-4 mb-6 relative z-10">
+                                        <div class="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 relative z-10">
                                             <div
-                                                class="size-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/20">
-                                                <flux:icon name="magnifying-glass-circle" class="size-7 text-white" />
+                                                class="size-10 sm:size-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/20 shrink-0">
+                                                <flux:icon name="magnifying-glass-circle"
+                                                    class="size-6 sm:size-7 text-white" />
                                             </div>
                                             <div>
                                                 <h4
-                                                    class="font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-widest text-[10px]">
+                                                    class="font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-widest text-[9px] sm:text-[10px]">
                                                     {{ __('Initial Brief') }}
                                                 </h4>
-                                                <p class="text-sm font-bold text-zinc-500">
+                                                <p class="text-xs sm:text-sm font-bold text-zinc-500">
                                                     {{ __('Project Request') }}
                                                 </p>
                                             </div>
@@ -502,10 +527,12 @@ new class extends Component {
                                         <div class="space-y-4 relative z-10">
                                             <div
                                                 class="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                                                <p class="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">
+                                                <p
+                                                    class="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">
                                                     {{ __('Task Description') }}
                                                 </p>
-                                                <p class="text-sm font-bold text-zinc-700 dark:text-zinc-200 leading-relaxed italic">
+                                                <p
+                                                    class="text-sm font-bold text-zinc-700 dark:text-zinc-200 leading-relaxed italic">
                                                     "{{ $msg->content }}"</p>
                                             </div>
 
@@ -534,13 +561,15 @@ new class extends Component {
                                     </div>
                                 @elseif($msg->type === 'quote')
                                     <div
-                                        class="bg-indigo-50 dark:bg-indigo-900/10 border-2 border-indigo-500/30 rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
-                                        <div class="absolute top-0 right-0 p-8 bg-indigo-500/5 rounded-full -mr-10 -mt-10 blur-2xl">
+                                        class="bg-indigo-50 dark:bg-indigo-900/10 border-2 border-indigo-500/30 rounded-3xl sm:rounded-[2rem] p-4 sm:p-6 shadow-xl relative overflow-hidden">
+                                        <div
+                                            class="absolute top-0 right-0 p-8 bg-indigo-500/5 rounded-full -mr-10 -mt-10 blur-2xl">
                                         </div>
                                         <div class="flex items-center gap-4 mb-6 relative z-10">
                                             <div
                                                 class="size-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                                                <flux:icon name="currency-dollar" variant="solid" class="size-7 text-white" />
+                                                <flux:icon name="currency-dollar" variant="solid"
+                                                    class="size-7 text-white" />
                                             </div>
                                             <div>
                                                 <h4
@@ -556,7 +585,8 @@ new class extends Component {
                                         <div class="grid grid-cols-2 gap-4 mb-6 relative z-10">
                                             <div
                                                 class="bg-white dark:bg-zinc-800 p-3 rounded-2xl border border-zinc-100 dark:border-zinc-700">
-                                                <p class="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">
+                                                <p
+                                                    class="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">
                                                     {{ __('Budget') }}
                                                 </p>
                                                 <p class="text-lg font-black text-zinc-900 dark:text-white">
@@ -565,7 +595,8 @@ new class extends Component {
                                             </div>
                                             <div
                                                 class="bg-white dark:bg-zinc-800 p-3 rounded-2xl border border-zinc-100 dark:border-zinc-700">
-                                                <p class="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">
+                                                <p
+                                                    class="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">
                                                     {{ __('Timeline') }}
                                                 </p>
                                                 <p class="text-lg font-black text-zinc-900 dark:text-white">
@@ -617,7 +648,7 @@ new class extends Component {
                                     </div>
                                 @elseif($msg->type === 'completion')
                                     <div
-                                        class="bg-zinc-900 dark:bg-white rounded-[2.5rem] p-8 text-center shadow-2xl relative overflow-hidden">
+                                        class="bg-zinc-900 dark:bg-white rounded-3xl sm:rounded-[2.5rem] p-5 sm:p-8 text-center shadow-2xl relative overflow-hidden">
                                         <div
                                             class="absolute top-0 right-0 p-12 bg-white/5 dark:bg-black/5 rounded-full -mr-16 -mt-16 blur-3xl">
                                         </div>
@@ -625,10 +656,12 @@ new class extends Component {
                                             class="size-20 bg-gradient-to-tr from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
                                             <flux:icon name="trophy" variant="solid" class="size-10 text-white" />
                                         </div>
-                                        <h4 class="font-black text-white dark:text-zinc-900 text-xl tracking-tight mb-2">
+                                        <h4
+                                            class="font-black text-white dark:text-zinc-900 text-xl tracking-tight mb-2">
                                             {{ __('Project Completed!') }}
                                         </h4>
-                                        <p class="text-zinc-400 dark:text-zinc-500 text-sm font-medium mb-8 leading-relaxed">
+                                        <p
+                                            class="text-zinc-400 dark:text-zinc-500 text-sm font-medium mb-8 leading-relaxed">
                                             {{ __('The job has been marked as finished. Please share your experience to help the community.') }}
                                         </p>
 
@@ -637,11 +670,13 @@ new class extends Component {
                                             <div class="space-y-6">
                                                 <div class="flex justify-center gap-3">
                                                     @for ($i = 1; $i <= 5; $i++)
-                                                        <button @click="rating = {{ $i }}" class="transition-transform hover:scale-125"
+                                                        <button @click="rating = {{ $i }}"
+                                                            class="transition-transform hover:scale-125"
                                                             x-bind:class="rating >= {{ $i }} ?
-                                                                                                                                                                                                                                        'text-yellow-400 scale-110' :
-                                                                                                                                                                                                                                        'text-zinc-700 dark:text-zinc-200'">
-                                                            <flux:icon name="star" variant="solid" class="size-8" />
+                                                                'text-yellow-400 scale-110' :
+                                                                'text-zinc-700 dark:text-zinc-200'">
+                                                            <flux:icon name="star" variant="solid"
+                                                                class="size-8" />
                                                         </button>
                                                     @endfor
                                                 </div>
@@ -663,8 +698,10 @@ new class extends Component {
                                                 </div>
 
                                                 @if ($isMine && !$msg->engagement->is_public)
-                                                    <div class="w-full mt-4 p-6 bg-white/5 rounded-[2rem] border border-white/10">
-                                                        <p class="text-[10px] font-black uppercase text-zinc-400 tracking-[0.2em] mb-4">
+                                                    <div
+                                                        class="w-full mt-4 p-4 sm:p-6 bg-white/5 rounded-[2rem] border border-white/10">
+                                                        <p
+                                                            class="text-[10px] font-black uppercase text-zinc-400 tracking-[0.2em] mb-4">
                                                             {{ __('Verified Success') }}
                                                         </p>
                                                         <button wire:click="showcaseJob"
@@ -680,16 +717,38 @@ new class extends Component {
                             </div>
                         </div>
                     @else
-                        <div class="flex {{ $isMine ? 'justify-end' : 'justify-start' }} w-full">
-                            <div class="max-w-[85%] md:max-w-[70%] space-y-1">
+                        <div class="flex {{ $isMine ? 'justify-end' : 'justify-start' }} w-full px-2 select-none relative"
+                            @if ($isMine) @dblclick="deletingId = (deletingId === {{ $msg->id }} ? null : {{ $msg->id }})" @endif>
+
+                            @if ($isMine)
+                                <!-- Deletion Overlay -->
+                                <div x-show="deletingId === {{ $msg->id }}" x-transition.opacity
+                                    class="absolute inset-0 z-20 flex items-center justify-center bg-white/10 dark:bg-black/10 backdrop-blur-sm rounded-3xl">
+                                    <div class="flex flex-col items-center gap-1">
+                                        <button
+                                            @click.stop="$wire.deleteMessage({{ $msg->id }}); deletingId = null"
+                                            class="size-10 bg-red-500 text-white rounded-full shadow-xl shadow-red-500/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
+                                            <flux:icon name="trash" variant="solid" class="size-5" />
+                                        </button>
+                                        <span
+                                            class="text-[8px] font-black uppercase tracking-tighter text-zinc-900 dark:text-white">{{ __('Delete') }}</span>
+                                    </div>
+                                    <button @click.stop="deletingId = null"
+                                        class="absolute -top-4 right-0 text-[10px] font-bold text-zinc-400 hover:text-zinc-600">{{ __('Cancel') }}</button>
+                                </div>
+                            @endif
+
+                            <div class="max-w-[90%] sm:max-w-[85%] md:max-w-[70%] space-y-1 transition-all duration-300"
+                                :class="deletingId === {{ $msg->id }} ? 'blur-md opacity-40 scale-95' : ''">
                                 <div
-                                    class="rounded-[1.5rem] px-5 py-3 text-sm shadow-sm break-words overflow-hidden
-                                                                                                                                                                                    @if ($isMine) bg-[var(--color-brand-purple)] text-white rounded-tr-none 
-                                                                                                                                                                                    @else 
-                                                                                                                                                                                    bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-700 rounded-tl-none @endif">
+                                    class="rounded-[1.5rem] px-4 py-2 sm:px-5 sm:py-3 text-sm shadow-sm break-words overflow-hidden cursor-pointer
+                                                                                                                                                                                                @if ($isMine) bg-[var(--color-brand-purple)] text-white rounded-tr-none 
+                                                                                                                                                                                                @else 
+                                                                                                                                                                                                bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-700 rounded-tl-none @endif">
 
                                     @if ($msg->image_path)
-                                        <div class="mb-2 rounded-lg overflow-hidden border border-white/20 bg-zinc-100/10 -mx-1">
+                                        <div
+                                            class="mb-2 rounded-lg overflow-hidden border border-white/20 bg-zinc-100/10 -mx-1">
                                             <img src="{{ \App\Models\Setting::asset($msg->image_path) }}"
                                                 class="max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity w-full object-cover"
                                                 @click="window.open('{{ \App\Models\Setting::asset($msg->image_path) }}', '_blank')">
@@ -705,8 +764,9 @@ new class extends Component {
                                                     {{ Str::limit($msg->document_name, 8) }}
                                                 </p>
                                             </div>
-                                            <a href="{{ \App\Models\Setting::asset($msg->document_path) }}" target="_blank"
-                                                download="{{ $msg->document_name }}" title="{{ __('Download Document') }}"
+                                            <a href="{{ \App\Models\Setting::asset($msg->document_path) }}"
+                                                target="_blank" download="{{ $msg->document_name }}"
+                                                title="{{ __('Download Document') }}"
                                                 class="p-1 hover:bg-black/10 rounded transition-colors">
                                                 <flux:icon name="arrow-down-tray" class="size-4" />
                                             </a>
@@ -717,7 +777,8 @@ new class extends Component {
                                         <p class="leading-relaxed whitespace-pre-wrap">{{ $msg->content }}</p>
                                     @endif
                                 </div>
-                                <div class="flex items-center gap-1.5 px-1 {{ $isMine ? 'justify-end' : 'justify-start' }}">
+                                <div
+                                    class="flex items-center gap-1.5 px-1 {{ $isMine ? 'justify-end' : 'justify-start' }}">
                                     <span
                                         class="text-[8px] text-zinc-500 uppercase font-medium">{{ $msg->created_at->format('h:i A') }}</span>
                                     @if ($isMine)
@@ -747,7 +808,8 @@ new class extends Component {
                     <h3 class="font-black text-zinc-900 dark:text-zinc-100 text-lg tracking-tight">
                         {{ __('Interaction Deck') }}
                     </h3>
-                    <button @click="uistate_opened = false" class="text-zinc-400 hover:text-zinc-600 transition-colors">
+                    <button @click="uistate_opened = false"
+                        class="text-zinc-400 hover:text-zinc-600 transition-colors">
                         <flux:icon name="x-mark" class="size-5" />
                     </button>
                 </div>
@@ -780,7 +842,10 @@ new class extends Component {
                                     {{ __('Mark as Completed') }}
                                 </button>
                             </div>
-                        @elseif($activeConversation->activeEngagement->status === 'completed' && !$activeConversation->activeEngagement->is_public && $activeConversation->activeEngagement->completed_at?->gt(now()->subDays(7)))
+                        @elseif(
+                            $activeConversation->activeEngagement->status === 'completed' &&
+                                !$activeConversation->activeEngagement->is_public &&
+                                $activeConversation->activeEngagement->completed_at?->gt(now()->subDays(7)))
                             <div class="p-4 bg-purple-500/10 border border-purple-500/20 rounded-3xl text-center">
                                 <p class="text-xs font-bold text-purple-600 mb-4">
                                     {{ __('Job finished! Want to show it off?') }}
@@ -859,13 +924,18 @@ new class extends Component {
                             !$engagementStatus && !$isArtisan => __('Start Deal'),
                             $engagementStatus === 'pending' && $isArtisan => __('Send Quote'),
                             $engagementStatus === 'accepted' && $isArtisan => __('Mark Finished'),
-                            $engagementStatus === 'completed' && $isArtisan && !$activeConversation->activeEngagement->is_public && $activeConversation->activeEngagement->completed_at?->gt(now()->subDays(7)) => __('Showcase Work'),
-                            default => null
+                            $engagementStatus === 'completed' &&
+                                $isArtisan &&
+                                !$activeConversation->activeEngagement->is_public &&
+                                $activeConversation->activeEngagement->completed_at?->gt(now()->subDays(7))
+                                => __('Showcase Work'),
+                            default => null,
                         };
                     @endphp
 
-                    @if($promptText)
-                        <div x-show="showPrompt && !uistate_opened" x-transition:enter="transition ease-out duration-300"
+                    @if ($promptText)
+                        <div x-show="showPrompt && !uistate_opened"
+                            x-transition:enter="transition ease-out duration-300"
                             x-transition:enter-start="opacity-0 -translate-x-2"
                             x-transition:enter-end="opacity-100 translate-x-0"
                             x-transition:leave="transition ease-in duration-200"
@@ -883,11 +953,12 @@ new class extends Component {
                         </div>
                     @endif
 
-                    <button @click="uistate_opened = !uistate_opened; showPrompt = false" x-bind:class="uistate_opened ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900' :
-                                                        'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'"
+                    <button @click="uistate_opened = !uistate_opened; showPrompt = false"
+                        x-bind:class="uistate_opened ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900' :
+                            'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'"
                         class="p-3.5 rounded-2xl transition-all hover:scale-105 active:scale-95 shrink-0 relative group">
 
-                        @if($promptText)
+                        @if ($promptText)
                             <span class="absolute -top-1 -right-1 flex h-3 w-3" x-show="!uistate_opened">
                                 <span
                                     class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
@@ -897,33 +968,36 @@ new class extends Component {
                         @endif
 
                         <div x-bind:class="uistate_opened ? 'rotate-45' : ''" class="transition-transform">
-                            <flux:icon name="plus" class="size-6" />
+                            <flux:icon name="plus" class="size-5" />
                         </div>
                     </button>
 
-                    <form wire:submit="sendMessage"
-                        class="flex-1 flex items-center gap-1 md:gap-2 bg-zinc-50 dark:bg-zinc-800 rounded-2xl px-2 md:px-4 py-2 border border-zinc-200 dark:border-zinc-700 focus-within:ring-2 focus-within:ring-[var(--color-brand-purple)]/20 focus-within:border-[var(--color-brand-purple)] transition-all">
+                    <form @submit.prevent="checkConnectionAndSend()"
+                        class="flex-1 flex items-end gap-1 md:gap-2 bg-zinc-50 dark:bg-zinc-800 rounded-2xl px-2 md:px-4 py-2 border border-zinc-200 dark:border-zinc-700 focus-within:ring-2 focus-within:ring-[var(--color-brand-purple)]/20 focus-within:border-[var(--color-brand-purple)] transition-all">
 
-                        <div class="flex gap-1">
+                        <div class="flex gap-1 mb-1">
                             <label
                                 class="cursor-pointer text-zinc-400 hover:text-[var(--color-brand-purple)] transition-colors p-1">
-                                <flux:icon name="photo" class="size-5" />
+                                <flux:icon name="photo" class="size-4" />
                                 <input type="file" wire:model="photo" class="hidden" accept="image/*">
                             </label>
                             <label
                                 class="cursor-pointer text-zinc-400 hover:text-[var(--color-brand-purple)] transition-colors p-1">
-                                <flux:icon name="paper-clip" class="size-5" />
+                                <flux:icon name="paper-clip" class="size-4" />
                                 <input type="file" wire:model="document" class="hidden">
                             </label>
                         </div>
 
-                        <input wire:model="messageText" type="text" placeholder="{{ __('Type a message...') }}"
-                            class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-1.5 text-zinc-900 dark:text-zinc-100">
+                        <textarea wire:model="messageText" placeholder="{{ __('Type a message...') }}"
+                            x-on:input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
+                            x-on:keydown.enter.prevent="if(!$event.shiftKey) checkConnectionAndSend()"
+                            class="flex-1 bg-transparent border-none focus:ring-0 outline-none text-sm py-1.5 text-zinc-900 dark:text-zinc-100 resize-none max-h-32 scrollbar-none"
+                            rows="1"></textarea>
 
                         <button type="submit"
-                            class="p-2 text-[var(--color-brand-purple)] hover:scale-110 transition-transform disabled:opacity-50"
+                            class="p-2 text-[var(--color-brand-purple)] hover:scale-110 transition-transform disabled:opacity-50 mb-0.5"
                             @if (empty(trim($messageText)) && !$photo && !$document) disabled @endif>
-                            <flux:icon name="paper-airplane" class="size-5" />
+                            <flux:icon name="paper-airplane" variant="solid" class="size-6" />
                         </button>
                     </form>
                 </div>
@@ -965,6 +1039,25 @@ new class extends Component {
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
+        .select-none {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        /* Better text wrapping for mobile */
+        .break-words {
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        @media (max-width: 640px) {
+            .max-w-sm {
+                max-width: 100% !important;
+            }
+        }
     </style>
     <!-- Showcase Creator Modal -->
     <flux:modal wire:model="showShowcaseModal" variant="flyout" class="space-y-6">
@@ -979,20 +1072,21 @@ new class extends Component {
             <form wire:submit="submitShowcase" class="space-y-6">
                 {{-- Public Description --}}
                 <flux:textarea wire:model="showcaseDescription" label="Public Project Summary"
-                    placeholder="Describe what you fixed, how you did it, and any special tools used..." rows="4" />
+                    placeholder="Describe what you fixed, how you did it, and any special tools used..."
+                    rows="4" />
 
                 {{-- Before/After Photos --}}
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="space-y-2">
                         <flux:label>{{ __('Before Fix (Optional)') }}</flux:label>
                         <div
-                            class="relative aspect-square rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 overflow-hidden">
+                            class="relative aspect-[4/3] sm:aspect-square rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 overflow-hidden bg-zinc-50 dark:bg-zinc-800/50">
                             @if ($showcaseBeforePhoto)
                                 <img src="{{ $showcaseBeforePhoto->temporaryUrl() }}" class="size-full object-cover">
                             @else
                                 <flux:icon name="photo" class="size-6 text-zinc-300" />
                                 <span
-                                    class="text-[8px] font-bold text-zinc-400 mt-1 uppercase">{{ __('Upload Before') }}</span>
+                                    class="text-[10px] font-bold text-zinc-400 mt-1 uppercase">{{ __('Upload Before') }}</span>
                             @endif
                             <input type="file" wire:model="showcaseBeforePhoto"
                                 class="absolute inset-0 opacity-0 cursor-pointer" accept="image/*">
@@ -1002,13 +1096,13 @@ new class extends Component {
                     <div class="space-y-2">
                         <flux:label>{{ __('After Success') }}</flux:label>
                         <div
-                            class="relative aspect-square rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 overflow-hidden">
+                            class="relative aspect-[4/3] sm:aspect-square rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 overflow-hidden bg-zinc-50 dark:bg-zinc-800/50">
                             @if ($showcaseAfterPhoto)
                                 <img src="{{ $showcaseAfterPhoto->temporaryUrl() }}" class="size-full object-cover">
                             @else
                                 <flux:icon name="sparkles" variant="solid" class="size-6 text-zinc-300" />
                                 <span
-                                    class="text-[8px] font-bold text-zinc-400 mt-1 uppercase">{{ __('Upload After') }}</span>
+                                    class="text-[10px] font-bold text-zinc-400 mt-1 uppercase">{{ __('Upload After') }}</span>
                             @endif
                             <input type="file" wire:model="showcaseAfterPhoto"
                                 class="absolute inset-0 opacity-0 cursor-pointer" accept="image/*">
@@ -1028,13 +1122,14 @@ new class extends Component {
                             <p class="text-[10px] font-black uppercase text-zinc-900 dark:text-white">
                                 {{ __('Share to Public Feed') }}
                             </p>
-                            <p class="text-[9px] text-zinc-500">{{ __('Promote this success story to all users.') }}</p>
+                            <p class="text-[9px] text-zinc-500">{{ __('Promote this success story to all users.') }}
+                            </p>
                         </div>
                     </div>
                     <flux:checkbox wire:model="showcaseToFeed" variant="toggle" />
                 </div>
 
-                @if($errors->any())
+                @if ($errors->any())
                     <div class="bg-red-50 text-red-500 p-3 rounded-xl text-[10px] font-bold">
                         {{ $errors->first() }}
                     </div>

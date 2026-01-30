@@ -4,6 +4,8 @@ use Livewire\Volt\Component;
 
 new class extends Component {
     public $notifications;
+    public $perPage = 10;
+    public $hasMore = false;
 
     public function mount()
     {
@@ -12,7 +14,15 @@ new class extends Component {
 
     public function loadNotifications()
     {
-        $this->notifications = auth()->user()->notifications()->latest()->take(50)->get();
+        $query = auth()->user()->notifications()->latest();
+        $this->notifications = $query->take($this->perPage)->get();
+        $this->hasMore = auth()->user()->notifications()->count() > $this->perPage;
+    }
+
+    public function loadMore()
+    {
+        $this->perPage += 10;
+        $this->loadNotifications();
     }
 
     public function markAsRead($id)
@@ -144,6 +154,17 @@ new class extends Component {
                     {{ __('When people like, comment, or reply to you, we\'ll let you know here.') }}</p>
             </div>
         @endforelse
+
+        @if ($hasMore)
+            <div class="pt-4 flex justify-center">
+                <button wire:click="loadMore" wire:loading.attr="disabled"
+                    class="px-6 py-2 rounded-full border border-zinc-200 dark:border-zinc-800 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                    <span wire:loading.remove wire:target="loadMore">{{ __('Load More') }}</span>
+                    <span wire:loading wire:target="loadMore">{{ __('Loading...') }}</span>
+                    <flux:icon wire:loading.remove wire:target="loadMore" name="chevron-down" class="size-3" />
+                </button>
+            </div>
+        @endif
     </div>
 
     <!-- Integrate Post Detail for viewing -->

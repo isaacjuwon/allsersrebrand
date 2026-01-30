@@ -286,6 +286,6 @@ new class extends Component {
             </div>
         </div>
 
-        {{-- <livewire:settings.delete-user-form /> --}}
+        <livewire:settings.delete-user-form />
     </x-settings.layout>
 </section>

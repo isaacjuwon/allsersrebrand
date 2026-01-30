@@ -135,7 +135,7 @@
 
         <div class="pt-6 text-center">
             <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                {{ config('app.name') }} &bull; v{{ config('app.version', '4.6') }} &bull; @yield('version', '2026')
+                {{ config('app.name') }} &bull; v{{ config('app.version', '4.9') }} &bull; @yield('version', '2026')
             </p>
         </div>
     </div>

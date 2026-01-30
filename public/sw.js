@@ -1,4 +1,4 @@
-const CACHE_NAME = 'allsers-v4.8';
+const CACHE_NAME = 'allsers-v4.9';
 const OFFLINE_URL = '/offline.html';
 const ASSETS_TO_CACHE = [
     OFFLINE_URL,
